@@ -22,6 +22,12 @@ jobs:
           git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
           git fetch --depth=1 --update-head-ok origin +$GITHUB_REF:default
           git checkout
+      - name: setup
+        run: |
+          rustup toolchain install stable
+          rustup toolchain install nightly
+          rustup component add --toolchain stable rustfmt clippy
+          rustup component add --toolchain nightly rustfmt clippy miri
       - name: version
         run: |
           rustc --version
