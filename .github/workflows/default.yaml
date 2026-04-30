@@ -2,11 +2,11 @@ name: default
 
 on:
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: "0 0 1 * *"
   push:
-    branches: [ default ]
+    branches: [default]
   pull_request:
-    branches: [ default ]
+    branches: [default]
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,29 +16,31 @@ jobs:
   default:
     runs-on: ubuntu-latest
     steps:
-    - name: checkout
-      run: |
-        git init --initial-branch=default
-        git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
-        git fetch --depth=1 --update-head-ok origin +$GITHUB_REF:default
-        git checkout
-    - name: version
-      run: |
-        rustc --version
-        cargo --version
-        cargo fmt --version
-        cargo clippy --version
-    - name: check
-      run: cargo check --verbose --workspace --all-features --all-targets --release
-    - name: format
-      run: cargo fmt --verbose --all -- --check
-    - name: clippy
-      run: cargo clippy --verbose --workspace --all-features --all-targets --release -- --deny warnings
-    - name: build
-      run: cargo build --verbose --workspace --all-features --all-targets --release
-    - name: test
-      run: cargo test --verbose --workspace --all-features --all-targets --release
-    - name: doc
-      run: cargo doc --verbose --workspace --all-features --no-deps --release
-    - name: doctest
-      run: cargo test --verbose --workspace --all-features --doc
+      - name: checkout
+        run: |
+          git init --initial-branch=default
+          git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
+          git fetch --depth=1 --update-head-ok origin +$GITHUB_REF:default
+          git checkout
+      - name: version
+        run: |
+          rustc --version
+          cargo --version
+          cargo fmt --version
+          cargo clippy --version
+      - name: check
+        run: cargo check --verbose --workspace --all-features --all-targets --release
+      - name: format
+        run: cargo +nightly fmt --verbose --all -- --check
+      - name: clippy
+        run: cargo clippy --verbose --workspace --all-features --all-targets --release -- --deny warnings
+      - name: build
+        run: cargo build --verbose --workspace --all-features --all-targets --release
+      - name: test
+        run: cargo test --verbose --workspace --all-features --all-targets --release
+      - name: miri
+        run: cargo +nightly miri test --verbose --workspace --all-features --all-targets
+      - name: doc
+        run: cargo doc --verbose --workspace --all-features --no-deps --release
+      - name: doctest
+        run: cargo test --verbose --workspace --all-features --doc
