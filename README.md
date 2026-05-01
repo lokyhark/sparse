@@ -1,4 +1,4 @@
-# Shaft
+# Sparse
 
 [<img alt="github" src="https://img.shields.io/badge/github-lokyhark/sparse-2e2459?style=for-the-badge&logo=github">](https://github.com/lokyhark/sparse)
 [<img alt="crates.io" src="https://img.shields.io/crates/v/sparse.svg?style=for-the-badge&color=ffc832&logo=rust">](https://crates.io/crates/sparse)
