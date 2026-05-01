@@ -2,5 +2,20 @@
 name = "sparse"
 version = "0.0.0"
 edition = "2024"
+description = "Sparse"
+repository = "https://github.com/lokyhark/sparse"
+license = "MIT"
+keywords = ["sparse"]
+categories = ["mathematics"]
 
 [dependencies]
+
+[lints.clippy]
+all = "warn"
+cargo = "warn"
+complexity = "warn"
+correctness = "warn"
+pedantic = "warn"
+perf = "warn"
+style = "warn"
+suspicious = "warn"

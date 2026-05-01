@@ -85,9 +85,8 @@ impl<T> Array<T> {
             return Err(ArrayErrorKind::TypeNeedsDrop.into());
         }
         // Determine allocation layout.
-        let layout = match Layout::array::<T>(capacity) {
-            Ok(layout) => layout,
-            Err(_) => return Err(ArrayErrorKind::LayoutError.into()),
+        let Ok(layout) = Layout::array::<T>(capacity) else {
+            return Err(ArrayErrorKind::LayoutError.into());
         };
         // Allocate memory.
         let ptr = unsafe { alloc(layout) };
