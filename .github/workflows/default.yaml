@@ -27,7 +27,7 @@ jobs:
           rustup toolchain install stable
           rustup toolchain install nightly
           rustup component add --toolchain stable rustfmt clippy
-          rustup component add --toolchain nightly rustfmt clippy miri
+          rustup component add --toolchain nightly rustfmt clippy miri rust-src
       - name: version
         run: |
           rustc --version
