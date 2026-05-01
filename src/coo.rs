@@ -108,7 +108,7 @@ impl<I: Index> CoordinatePattern<I> {
         }
         match Array::new(capacity) {
             Ok(entries) => Self { nrows, ncols, entries },
-            Err(_) => panic!("failed to allocate memory"),
+            Err(err) => panic!("failed to create coordinate pattern: {err}"),
         }
     }
 
@@ -349,7 +349,7 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
         }
         match Array::new(capacity) {
             Ok(entries) => Self { nrows, ncols, entries },
-            Err(_) => panic!("failed to allocate memory"),
+            Err(err) => panic!("failed to create coordinate pattern: {err}"),
         }
     }
 

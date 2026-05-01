@@ -139,7 +139,7 @@ impl<T> Array<T> {
 
 impl<T> Clone for Array<T> {
     fn clone(&self) -> Self {
-        let mut clone = Self::new(self.cap).expect("Failed to clone array.");
+        let mut clone = Self::new(self.cap).expect("failed to clone array");
         // SAFETY: We have exclusive access to the clone and capacity >= length.
         unsafe {
             std::ptr::copy_nonoverlapping(self.ptr, clone.ptr, self.len);
