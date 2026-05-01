@@ -462,7 +462,7 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
         }
     }
 
-    /// Returns an iterator over all entries in the pattern with shared reference to values.
+    /// Returns an iterator over all entries in the matrix with shared reference to values.
     ///
     /// # Examples
     ///
@@ -482,7 +482,7 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
         self.entries.iter().map(|(row, col, val)| (*row, *col, val))
     }
 
-    /// Returns an iterator over all entries in the pattern with exclusive reference to values.
+    /// Returns an iterator over all entries in the matrix with exclusive reference to values.
     ///
     /// # Examples
     ///
