@@ -6,7 +6,7 @@ use std::{
 };
 
 /// A contiguous, homogeneous, invariant, non-empty and heap allocated collections of values.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Array<T> {
     /// Pointer to the heap allocated array.
     ptr: *mut T,
@@ -134,6 +134,18 @@ impl<T> Array<T> {
         }
         self.len += 1;
         Ok(())
+    }
+}
+
+impl<T> Clone for Array<T> {
+    fn clone(&self) -> Self {
+        let mut clone = Self::new(self.cap).expect("Failed to clone array.");
+        // SAFETY: We have exclusive access to the clone and capacity >= length.
+        unsafe {
+            std::ptr::copy_nonoverlapping(self.ptr, clone.ptr, self.len);
+        }
+        clone.len = self.len;
+        clone
     }
 }
 
