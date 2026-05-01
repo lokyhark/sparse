@@ -98,13 +98,17 @@ impl<I: Index> CoordinatePattern<I> {
     /// Panics if:
     /// - `nrows` is not positive.
     /// - `ncols` is not positive.
-    /// - Memory allocation fails.
+    /// - `capacity` is not positive.
+    /// - memory allocation fails.
     pub fn new(nrows: I, ncols: I, capacity: usize) -> Self {
         if nrows <= I::zero() {
             panic!("number of rows must be positive");
         }
         if ncols <= I::zero() {
             panic!("number of columns must be positive");
+        }
+        if capacity == 0 {
+            panic!("capacity must be positive");
         }
         match Array::new(capacity) {
             Ok(entries) => Self { nrows, ncols, entries },
@@ -339,6 +343,7 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
     /// Panics if:
     /// - `nrows` is not positive.
     /// - `ncols` is not positive.
+    /// - `capacity` is not positive.
     /// - Memory allocation fails.
     pub fn new(nrows: I, ncols: I, capacity: usize) -> Self {
         if nrows <= I::zero() {
@@ -346,6 +351,9 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
         }
         if ncols <= I::zero() {
             panic!("number of columns must be positive");
+        }
+        if capacity == 0 {
+            panic!("capacity must be positive");
         }
         match Array::new(capacity) {
             Ok(entries) => Self { nrows, ncols, entries },
