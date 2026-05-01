@@ -192,10 +192,10 @@ impl<I: Index> CoordinatePattern<I> {
     /// - capacity overflow.
     pub fn push(&mut self, row: I, col: I) {
         if row >= self.nrows {
-            panic!("row index `{}` out of bounds; must be in [{};{}]", row, 0, self.nrows());
+            panic!("row index `{}` out of bounds; must be in [{};{})", row, 0, self.nrows());
         }
         if col >= self.ncols {
-            panic!("column index `{}` out of bounds; must be in [{};{}]", col, 0, self.ncols());
+            panic!("column index `{}` out of bounds; must be in [{};{})", col, 0, self.ncols());
         }
         match self.entries.push((row, col)) {
             Ok(()) => (),
@@ -451,10 +451,10 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
     /// - capacity overflow.
     pub fn push(&mut self, row: I, col: I, value: S) {
         if row >= self.nrows {
-            panic!("row index `{}` out of bounds; must be in [{};{}]", row, 0, self.nrows());
+            panic!("row index `{}` out of bounds; must be in [{};{})", row, 0, self.nrows());
         }
         if col >= self.ncols {
-            panic!("column index `{}` out of bounds; must be in [{};{}]", col, 0, self.ncols());
+            panic!("column index `{}` out of bounds; must be in [{};{})", col, 0, self.ncols());
         }
         match self.entries.push((row, col, value)) {
             Ok(()) => (),
