@@ -1,81 +1,32 @@
-use std::fmt::Display;
+use crate::int::Int;
 
-/// Seal trait for index types.
-pub trait Seal {}
-impl Seal for u8 {}
-impl Seal for u16 {}
-impl Seal for u32 {}
-impl Seal for u64 {}
-impl Seal for u128 {}
-impl Seal for usize {}
-impl Seal for i8 {}
-impl Seal for i16 {}
-impl Seal for i32 {}
-impl Seal for i64 {}
-impl Seal for i128 {}
-impl Seal for isize {}
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[repr(transparent)]
+pub struct Index<I: Int>(I);
 
-/// A trait for index types that can be used in sparse matrices.
-pub trait Index: Sized + Copy + Display + Eq + Ord + Send + Sync + 'static + Seal {
-    fn zero() -> Self;
-}
-impl Index for u8 {
-    fn zero() -> Self {
-        0
+impl<I: Int> Index<I> {
+    pub fn checked(index: I) -> Option<Self> {
+        let value = index.try_into().unwrap_or(usize::MAX);
+        if value <= I::IDXMAX { Some(Self(index)) } else { None }
     }
-}
-impl Index for u16 {
-    fn zero() -> Self {
-        0
+
+    pub unsafe fn unchecked(&self, index: I) -> Self {
+        Self(index)
     }
-}
-impl Index for u32 {
-    fn zero() -> Self {
-        0
+
+    pub fn get(&self) -> I {
+        self.0
     }
-}
-impl Index for u64 {
-    fn zero() -> Self {
-        0
+
+    /// Return an index.
+    pub fn index(&self) -> usize {
+        // SAFETY: The inner value is guaranteed to be a valid index.
+        unsafe { self.0.index() }
     }
-}
-impl Index for u128 {
-    fn zero() -> Self {
-        0
-    }
-}
-impl Index for usize {
-    fn zero() -> Self {
-        0
-    }
-}
-impl Index for i8 {
-    fn zero() -> Self {
-        0
-    }
-}
-impl Index for i16 {
-    fn zero() -> Self {
-        0
-    }
-}
-impl Index for i32 {
-    fn zero() -> Self {
-        0
-    }
-}
-impl Index for i64 {
-    fn zero() -> Self {
-        0
-    }
-}
-impl Index for i128 {
-    fn zero() -> Self {
-        0
-    }
-}
-impl Index for isize {
-    fn zero() -> Self {
-        0
+
+    /// Return an offset.
+    pub fn offset(&self) -> isize {
+        // SAFETY: The inner value is guaranteed to be a valid offset.
+        unsafe { self.0.offset() }
     }
 }

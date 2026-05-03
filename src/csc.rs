@@ -1,4 +1,4 @@
-use crate::{Index, Scalar, array::Array};
+use crate::{Scalar, array::Array, dimension::Dimension, int::Int};
 
 /// Compressed Sparse Column (CSC) format pattern.
 pub type CscPat<I> = CompressedSparseColumnPattern<I>;
@@ -7,26 +7,31 @@ pub type CscMat<I, S> = CompressedSparseColumnMatrix<I, S>;
 
 /// Compressed Sparse Column (CSC) format pattern.
 #[derive(Clone, Debug)]
-pub struct CompressedSparseColumnPattern<I: Index> {
+pub struct CompressedSparseColumnPattern<I: Int> {
     /// Number of rows.
-    nrows: I,
+    nrows: Dimension<I>,
     /// Number of columns.
-    ncols: I,
+    ncols: Dimension<I>,
     /// Column pointers.
     colptr: Array<I>,
     /// Row indices.
     rowind: Array<I>,
 }
 
-impl<I: Index> CompressedSparseColumnPattern<I> {
+impl<I: Int> CompressedSparseColumnPattern<I> {
     /// Returns the number of rows.
     pub fn nrows(&self) -> I {
-        self.nrows
+        self.nrows.get()
     }
 
     /// Returns the number of columns.
     pub fn ncols(&self) -> I {
-        self.ncols
+        self.ncols.get()
+    }
+
+    /// Returns the number of non-zero entries.
+    pub fn nnz(&self) -> I {
+        self.colptr[self.ncols.index()]
     }
 
     pub fn colptr(&self) -> &[I] {
@@ -40,11 +45,11 @@ impl<I: Index> CompressedSparseColumnPattern<I> {
 
 /// Compressed Sparse Column (CSC) format matrix.
 #[derive(Clone, Debug)]
-pub struct CompressedSparseColumnMatrix<I: Index, S: Scalar> {
+pub struct CompressedSparseColumnMatrix<I: Int, S: Scalar> {
     /// Number of rows.
-    nrows: I,
+    nrows: Dimension<I>,
     /// Number of columns.
-    ncols: I,
+    ncols: Dimension<I>,
     /// Column pointers.
     colptr: Array<I>,
     /// Row indices.
@@ -53,15 +58,15 @@ pub struct CompressedSparseColumnMatrix<I: Index, S: Scalar> {
     values: Array<S>,
 }
 
-impl<I: Index, S: Scalar> CompressedSparseColumnMatrix<I, S> {
+impl<I: Int, S: Scalar> CompressedSparseColumnMatrix<I, S> {
     /// Returns the number of rows.
     pub fn nrows(&self) -> I {
-        self.nrows
+        self.nrows.get()
     }
 
     /// Returns the number of columns.
     pub fn ncols(&self) -> I {
-        self.ncols
+        self.ncols.get()
     }
 
     pub fn colptr(&self) -> &[I] {
