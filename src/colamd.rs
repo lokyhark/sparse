@@ -927,7 +927,7 @@ impl<I: ColamdInt> Colamd<I> {
             }
 
             // Detect super columns.
-            self.detect(ncols, nnz, pivot_row_start, pivot_row_length);
+            self.detect(pivot_row_start, pivot_row_length);
 
             // Kill pivot column.
             self.cols[pivot_col_j.as_usize()].kill();
@@ -949,6 +949,7 @@ impl<I: ColamdInt> Colamd<I> {
                     continue;
                 }
                 self.inds[pos.as_usize()] = j;
+                pos += I::ONE;
                 // Add pivot row to column.
                 let idx = col.start + col.length;
                 self.inds[idx.as_usize()] = pivot_row_i;
@@ -1015,7 +1016,7 @@ impl<I: ColamdInt> Colamd<I> {
         }
     }
 
-    fn detect(&mut self, ncols: I, nnz: I, start: I, length: I) {
+    fn detect(&mut self, start: I, length: I) {
         for ptr in I::range(start, start + length) {
             // Retrieve column index.
             let col = self.inds[ptr.as_usize()];
