@@ -1,4 +1,4 @@
-use crate::{Scalar, array::Array, dimension::Dimension, int::Int};
+use crate::{Scalar, array::Array, int::Int};
 
 /// Compressed Sparse Column (CSC) format pattern.
 pub type CscPat<I> = CompressedSparseColumnPattern<I>;
@@ -9,9 +9,9 @@ pub type CscMat<I, S> = CompressedSparseColumnMatrix<I, S>;
 #[derive(Clone, Debug)]
 pub struct CompressedSparseColumnPattern<I: Int> {
     /// Number of rows.
-    nrows: Dimension<I>,
+    nrows: I,
     /// Number of columns.
-    ncols: Dimension<I>,
+    ncols: I,
     /// Column pointers.
     colptr: Array<I>,
     /// Row indices.
@@ -21,17 +21,17 @@ pub struct CompressedSparseColumnPattern<I: Int> {
 impl<I: Int> CompressedSparseColumnPattern<I> {
     /// Returns the number of rows.
     pub fn nrows(&self) -> I {
-        self.nrows.get()
+        self.nrows
     }
 
     /// Returns the number of columns.
     pub fn ncols(&self) -> I {
-        self.ncols.get()
+        self.ncols
     }
 
     /// Returns the number of non-zero entries.
     pub fn nnz(&self) -> I {
-        self.colptr[self.ncols.index()]
+        self.colptr[self.ncols.as_usize()]
     }
 
     pub fn colptr(&self) -> &[I] {
@@ -47,9 +47,9 @@ impl<I: Int> CompressedSparseColumnPattern<I> {
 #[derive(Clone, Debug)]
 pub struct CompressedSparseColumnMatrix<I: Int, S: Scalar> {
     /// Number of rows.
-    nrows: Dimension<I>,
+    nrows: I,
     /// Number of columns.
-    ncols: Dimension<I>,
+    ncols: I,
     /// Column pointers.
     colptr: Array<I>,
     /// Row indices.
@@ -61,12 +61,12 @@ pub struct CompressedSparseColumnMatrix<I: Int, S: Scalar> {
 impl<I: Int, S: Scalar> CompressedSparseColumnMatrix<I, S> {
     /// Returns the number of rows.
     pub fn nrows(&self) -> I {
-        self.nrows.get()
+        self.nrows
     }
 
     /// Returns the number of columns.
     pub fn ncols(&self) -> I {
-        self.ncols.get()
+        self.ncols
     }
 
     pub fn colptr(&self) -> &[I] {

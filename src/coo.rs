@@ -1,4 +1,4 @@
-use crate::{Scalar, array::Array, dimension::Dimension, index::Index, int::Int};
+use crate::{Scalar, array::Array, int::Int};
 
 /// Coordinate format (COO) sparse pattern.
 pub type CooPat<I> = CoordinatePattern<I>;
@@ -75,11 +75,11 @@ pub type CooMat<I, S> = CoordinateMatrix<I, S>;
 #[derive(Clone, Debug)]
 pub struct CoordinatePattern<I: Int> {
     /// Number of rows.
-    nrows: Dimension<I>,
+    nrows: I,
     /// Number of columns.
-    ncols: Dimension<I>,
+    ncols: I,
     /// Nonzero entries.
-    entries: Array<(Index<I>, Index<I>)>,
+    entries: Array<(I, I)>,
 }
 
 impl<I: Int> CoordinatePattern<I> {
@@ -101,12 +101,6 @@ impl<I: Int> CoordinatePattern<I> {
     /// - `capacity` is not positive.
     /// - memory allocation fails.
     pub fn new(nrows: I, ncols: I, capacity: usize) -> Self {
-        let Some(nrows) = Dimension::checked(nrows) else {
-            panic!("number of rows must be positive and less than or equal to {}", Dimension::<I>::MAX);
-        };
-        let Some(ncols) = Dimension::checked(ncols) else {
-            panic!("number of columns must be positive and less than or equal to {}", Dimension::<I>::MAX);
-        };
         assert!(capacity != 0, "capacity must be positive");
         match Array::new(capacity) {
             Ok(entries) => Self { nrows, ncols, entries },
@@ -125,7 +119,7 @@ impl<I: Int> CoordinatePattern<I> {
     /// assert_eq!(pat.nrows(), 3);
     /// ```
     pub fn nrows(&self) -> I {
-        self.nrows.get()
+        self.nrows
     }
 
     /// Returns the number of columns.
@@ -139,7 +133,7 @@ impl<I: Int> CoordinatePattern<I> {
     /// assert_eq!(pat.ncols(), 4);
     /// ```
     pub fn ncols(&self) -> I {
-        self.ncols.get()
+        self.ncols
     }
 
     /// Returns the number of entries in the pattern.
@@ -193,16 +187,6 @@ impl<I: Int> CoordinatePattern<I> {
     /// - `col` is out of bounds.
     /// - capacity overflow.
     pub fn push(&mut self, row: I, col: I) {
-        let row = match Index::checked(row) {
-            Some(row) if row.index() < self.nrows.index() => row,
-            Some(row) => panic!("row index `{}` out of bounds; must be in [{};{})", row.get(), 0, self.nrows()),
-            None => panic!("row index `{}` is not a valid index; must be in [0;{})", row, I::IDXMAX),
-        };
-        let col = match Index::checked(col) {
-            Some(col) if col.index() < self.ncols.index() => col,
-            Some(col) => panic!("column index `{}` out of bounds; must be in [{};{})", col.get(), 0, self.ncols()),
-            None => panic!("column index `{}` is not a valid index; must be in [0;{})", col, I::IDXMAX),
-        };
         match self.entries.push((row, col)) {
             Ok(()) => (),
             Err(err) => panic!("failed to push entry to pattern: {err}"),
@@ -244,7 +228,7 @@ impl<I: Int> CoordinatePattern<I> {
     /// assert_eq!(entries.next(), None);
     /// ```
     pub fn iter(&self) -> impl Iterator<Item = (I, I)> {
-        self.entries.iter().map(|&(row, col)| (row.get(), col.get()))
+        self.entries.iter().map(|&(row, col)| (row, col))
     }
 }
 
@@ -321,11 +305,11 @@ impl<I: Int> CoordinatePattern<I> {
 #[derive(Clone, Debug)]
 pub struct CoordinateMatrix<I: Int, S: Scalar> {
     /// Number of rows.
-    nrows: Dimension<I>,
+    nrows: I,
     /// Number of columns.
-    ncols: Dimension<I>,
+    ncols: I,
     /// Nonzero entries.
-    entries: Array<(Index<I>, Index<I>, S)>,
+    entries: Array<(I, I, S)>,
 }
 
 impl<I: Int, S: Scalar> CoordinateMatrix<I, S> {
@@ -348,12 +332,6 @@ impl<I: Int, S: Scalar> CoordinateMatrix<I, S> {
     /// - `capacity` is not positive.
     /// - Memory allocation fails.
     pub fn new(nrows: I, ncols: I, capacity: usize) -> Self {
-        let Some(nrows) = Dimension::checked(nrows) else {
-            panic!("number of rows must be positive and less than or equal to {}", Dimension::<I>::MAX);
-        };
-        let Some(ncols) = Dimension::checked(ncols) else {
-            panic!("number of columns must be positive and less than or equal to {}", Dimension::<I>::MAX);
-        };
         assert!(capacity != 0, "capacity must be positive");
         match Array::new(capacity) {
             Ok(entries) => Self { nrows, ncols, entries },
@@ -372,7 +350,7 @@ impl<I: Int, S: Scalar> CoordinateMatrix<I, S> {
     /// assert_eq!(mat.nrows(), 3);
     /// ```
     pub fn nrows(&self) -> I {
-        self.nrows.get()
+        self.nrows
     }
 
     /// Returns the number of columns.
@@ -386,7 +364,7 @@ impl<I: Int, S: Scalar> CoordinateMatrix<I, S> {
     /// assert_eq!(mat.ncols(), 4);
     /// ```
     pub fn ncols(&self) -> I {
-        self.ncols.get()
+        self.ncols
     }
 
     /// Returns the number of entries in the matrix.
@@ -458,16 +436,6 @@ impl<I: Int, S: Scalar> CoordinateMatrix<I, S> {
     /// - `col` is out of bounds.
     /// - capacity overflow.
     pub fn push(&mut self, row: I, col: I, value: S) {
-        let row = match Index::checked(row) {
-            Some(row) if row.index() < self.nrows.index() => row,
-            Some(row) => panic!("row index `{}` out of bounds; must be in [{};{})", row.get(), 0, self.nrows()),
-            None => panic!("row index `{}` is not a valid index; must be in [0;{})", row, I::IDXMAX),
-        };
-        let col = match Index::checked(col) {
-            Some(col) if col.index() < self.ncols.index() => col,
-            Some(col) => panic!("column index `{}` out of bounds; must be in [{};{})", col.get(), 0, self.ncols()),
-            None => panic!("column index `{}` is not a valid index; must be in [0;{})", col, I::IDXMAX),
-        };
         match self.entries.push((row, col, value)) {
             Ok(()) => (),
             Err(err) => panic!("failed to push entry to matrix: {err}"),
@@ -491,7 +459,7 @@ impl<I: Int, S: Scalar> CoordinateMatrix<I, S> {
     /// assert_eq!(entries.next(), None);
     /// ```
     pub fn iter(&self) -> impl Iterator<Item = (I, I, &'_ S)> {
-        self.entries.iter().map(|(row, col, val)| (row.get(), col.get(), val))
+        self.entries.iter().map(|(row, col, val)| (*row, *col, val))
     }
 
     /// Returns an iterator over all entries in the matrix with exclusive reference to values.
@@ -511,6 +479,6 @@ impl<I: Int, S: Scalar> CoordinateMatrix<I, S> {
     /// assert_eq!(entries.next(), None);
     /// ```
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (I, I, &'_ mut S)> {
-        self.entries.iter_mut().map(|(row, col, val)| (row.get(), col.get(), val))
+        self.entries.iter_mut().map(|(row, col, val)| (*row, *col, val))
     }
 }

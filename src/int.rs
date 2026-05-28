@@ -1,4 +1,8 @@
-use std::fmt::Display;
+use std::{
+    fmt::{Debug, Display},
+    isize,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign},
+};
 
 /// Seal trait for index types.
 pub trait Seal {}
@@ -16,231 +20,258 @@ impl Seal for i128 {}
 impl Seal for isize {}
 
 /// A trait for index types that can be used in sparse matrices.
-pub trait Int: Sized + Copy + Display + Eq + Ord + Send + Sync + 'static + Seal + TryInto<isize> + TryInto<usize> {
-    const IDXMAX: usize;
-    fn zero() -> Self;
-    unsafe fn index(self) -> usize;
-    unsafe fn offset(self) -> isize;
+pub trait Int:
+    Sized
+    + Copy
+    + Debug
+    + Display
+    + Eq
+    + Ord
+    + Send
+    + Sync
+    + 'static
+    + Seal
+    + TryFrom<usize>
+    + TryInto<usize>
+    + TryInto<isize>
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Output = Self>
+    + Div<Output = Self>
+    + Rem<Output = Self>
+    + AddAssign
+    + SubAssign
+    + MulAssign
+    + DivAssign
+    + RemAssign
+{
+    /// The zero value.
+    const ZERO: Self;
+    /// The one value.
+    const ONE: Self;
+    /// The ten value.
+    const TEN: Self;
+
+    /// Convert to `usize`.
+    fn as_usize(self) -> usize;
+    /// Return an iterator over the range `[start, stop)`.
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator;
+    /// Return the integer square root of `self`.
+    fn isqrt(self) -> Self;
 }
 
 impl Int for u8 {
-    const IDXMAX: usize = i8::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for u16 {
-    const IDXMAX: usize = i16::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for u32 {
-    #[cfg(target_pointer_width = "16")]
-    const IDXMAX: usize = i16::MAX as usize;
-    #[cfg(target_pointer_width = "32")]
-    const IDXMAX: usize = i32::MAX as usize;
-    #[cfg(target_pointer_width = "64")]
-    const IDXMAX: usize = i32::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for u64 {
-    #[cfg(target_pointer_width = "16")]
-    const IDXMAX: usize = i16::MAX as usize;
-    #[cfg(target_pointer_width = "32")]
-    const IDXMAX: usize = i32::MAX as usize;
-    #[cfg(target_pointer_width = "64")]
-    const IDXMAX: usize = i64::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for u128 {
-    #[cfg(target_pointer_width = "16")]
-    const IDXMAX: usize = i16::MAX as usize;
-    #[cfg(target_pointer_width = "32")]
-    const IDXMAX: usize = i32::MAX as usize;
-    #[cfg(target_pointer_width = "64")]
-    const IDXMAX: usize = i64::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for usize {
-    const IDXMAX: usize = isize::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for i8 {
-    const IDXMAX: usize = i8::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for i16 {
-    const IDXMAX: usize = i16::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for i32 {
-    #[cfg(target_pointer_width = "16")]
-    const IDXMAX: usize = i16::MAX as usize;
-    #[cfg(target_pointer_width = "32")]
-    const IDXMAX: usize = i32::MAX as usize;
-    #[cfg(target_pointer_width = "64")]
-    const IDXMAX: usize = i32::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for i64 {
-    #[cfg(target_pointer_width = "16")]
-    const IDXMAX: usize = i16::MAX as usize;
-    #[cfg(target_pointer_width = "32")]
-    const IDXMAX: usize = i32::MAX as usize;
-    #[cfg(target_pointer_width = "64")]
-    const IDXMAX: usize = i64::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for i128 {
-    #[cfg(target_pointer_width = "16")]
-    const IDXMAX: usize = i16::MAX as usize;
-    #[cfg(target_pointer_width = "32")]
-    const IDXMAX: usize = i32::MAX as usize;
-    #[cfg(target_pointer_width = "64")]
-    const IDXMAX: usize = i64::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }
 
 impl Int for isize {
-    const IDXMAX: usize = isize::MAX as usize;
+    const ZERO: Self = 0;
+    const ONE: Self = 1;
+    const TEN: Self = 10;
 
-    fn zero() -> Self {
-        0
-    }
-
-    unsafe fn index(self) -> usize {
+    fn as_usize(self) -> usize {
         self as usize
     }
 
-    unsafe fn offset(self) -> isize {
-        self as isize
+    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+        start..stop
+    }
+
+    fn isqrt(self) -> Self {
+        self.isqrt()
     }
 }

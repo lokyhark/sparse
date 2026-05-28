@@ -72,7 +72,7 @@ impl From<ArrayErrorKind> for ArrayError {
     }
 }
 
-impl<T> Array<T> {
+impl<T: Clone> Array<T> {
     /// Creates a new array with the given capacity.
     pub fn new(capacity: usize) -> Result<Self, ArrayError> {
         // Empty arrays not supported.
@@ -98,11 +98,7 @@ impl<T> Array<T> {
             return Err(ArrayErrorKind::AllocError.into());
         }
 
-        let array = Self {
-            ptr: ptr.cast(),
-            len: 0,
-            cap: capacity,
-        };
+        let array = Self { ptr: ptr.cast(), len: 0, cap: capacity };
         Ok(array)
     }
 
@@ -138,9 +134,18 @@ impl<T> Array<T> {
         self.len += 1;
         Ok(())
     }
+
+    pub fn resize(&mut self, length: usize, value: T) -> Result<(), ArrayError> {
+        if length > self.cap {
+            return Err(ArrayErrorKind::CapacityOverflow.into());
+        }
+        self.len = length;
+        self.fill(value);
+        Ok(())
+    }
 }
 
-impl<T> Clone for Array<T> {
+impl<T: Clone> Clone for Array<T> {
     fn clone(&self) -> Self {
         let mut clone = Self::new(self.cap).expect("failed to clone array");
         // SAFETY: We have exclusive access to the clone and capacity >= length.
