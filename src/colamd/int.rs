@@ -4,12 +4,14 @@ use std::{
     usize,
 };
 
-trait Seal {}
+mod private {
+    pub trait Seal {}
 
-impl Seal for i16 {}
-impl Seal for i32 {}
-impl Seal for i64 {}
-impl Seal for isize {}
+    impl Seal for i16 {}
+    impl Seal for i32 {}
+    impl Seal for i64 {}
+    impl Seal for isize {}
+}
 
 pub trait ColamdInt:
     Sized
@@ -34,7 +36,7 @@ pub trait ColamdInt:
     + MulAssign
     + DivAssign
     + RemAssign
-    + Seal
+    + private::Seal
 {
     /// The zero value.
     #[doc(hidden)]
