@@ -26,6 +26,6 @@ impl<I: ColamdInt> ColamdCol<I> {
     }
 
     pub fn kill(&mut self) {
-        self.start = -I::ONE;
+        self.start = I::NEG;
     }
 }
