@@ -38,7 +38,7 @@ use size::ColamdSize;
 ///   *Algorithm 836: COLAMD, an approximate column minimum degree ordering algorithm*,
 ///   ACM Transactions on Mathematical Software, vol. 30, no. 3., pp. 377-380, 2004.
 ///   <https://doi.org/10.1145/1024074.1024080>
-pub fn colamd<I: ColamdInt>(nrows: I, ncols: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult, ColamdError<I>> {
+pub fn colamd<I: ColamdInt>(nrows: I, ncols: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult<I>, ColamdError<I>> {
     // Check inputs.
     let size = Colamd::check(nrows, ncols, colptr, rowind)?;
     // Allocate algorithm.
@@ -278,7 +278,7 @@ impl<I: ColamdInt> Colamd<I> {
 
     /// Run the COLAMD algorithm on a matrix of size `nrows` by `ncols` with `nnz` non zeros represented
     /// in column compressed form by `colptr` and `rowind`.
-    pub fn run(&mut self, nrows: I, ncols: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult, ColamdError<I>> {
+    pub fn run(&mut self, nrows: I, ncols: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult<I>, ColamdError<I>> {
         // Check input.
         let size = Colamd::check(nrows, ncols, colptr, rowind)?;
         // Execute algorithm.
@@ -295,7 +295,7 @@ impl<I: ColamdInt> Colamd<I> {
     /// - colptr[ncols + 1] = nnz
     /// - 0 <= nnz < isize::MAX + 1
     /// - rowind.len() = nnz
-    fn exec(&mut self, nrows: I, ncols: I, nnz: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult, ColamdError<I>> {
+    fn exec(&mut self, nrows: I, ncols: I, nnz: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult<I>, ColamdError<I>> {
         // CHECKPOINT:
         // 0 <= nrows < isize::MAX + 1
         // 0 <= ncols < isize::MAX + 1
@@ -322,9 +322,15 @@ impl<I: ColamdInt> Colamd<I> {
         self.find(nrows, ncols, nnz, score.cols, score.min_score, score.max_degree)?;
 
         // Order.
-        self.order(ncols);
+        let order = self.order(ncols)?;
 
-        Ok(ColamdResult {})
+        Ok(ColamdResult {
+            cols: score.cols,
+            rows: score.rows,
+            max_degree: score.max_degree,
+            min_score: score.min_score,
+            order,
+        })
     }
 
     /// Initialize the COLAMD algorithm.
@@ -980,40 +986,44 @@ impl<I: ColamdInt> Colamd<I> {
                 row.degree = pivot_row_degree;
                 row.mark = I::ZERO;
             }
-            for (r, row) in self.rows.iter().enumerate() {
-                println!("row = {}, start = {}, length = {}, degree = {}, mark = {}", r, row.start, row.length, row.degree, row.mark);
-            }
-            for (c, col) in self.cols.iter().enumerate() {
-                println!(
-                    "col = {}, start = {}, length = {}, weight = {}, rank = {}, prev = {}, next = {}",
-                    c, col.start, col.length, col.weight, col.rank, col.prev, col.next
-                );
-            }
         }
 
         Ok(())
     }
 
-    fn order(&mut self, ncols: I) {
+    fn order(&mut self, ncols: I) -> Result<Array<I>, ColamdError<I>> {
         for i in I::range(I::ZERO, ncols) {
-            let mut parent = i;
-            loop {
-                parent = self.cols[parent.as_usize()].weight;
-                break;
-            }
-            let mut order = self.cols[parent.as_usize()].rank;
-            let mut col = i;
-            loop {
-                self.cols[col.as_usize()].rank = order;
-                order += I::ONE;
-                self.cols[col.as_usize()].weight = parent;
-                col = self.cols[col.as_usize()].weight;
-                if col == parent {
-                    break;
+            let col = &self.cols[i.as_usize()];
+            if col.dead_principal() && col.rank == Self::EMPTY {
+                let mut parent = i;
+                loop {
+                    parent = self.cols[parent.as_usize()].weight;
+                    if !self.cols[parent.as_usize()].dead_principal() {
+                        break;
+                    }
                 }
+                let mut order = self.cols[parent.as_usize()].rank;
+                let mut col = i;
+                loop {
+                    self.cols[col.as_usize()].rank = order;
+                    order += I::ONE;
+                    self.cols[col.as_usize()].weight = parent;
+                    col = self.cols[col.as_usize()].weight;
+                    if self.cols[col.as_usize()].rank == Self::EMPTY {
+                        break;
+                    }
+                }
+                self.cols[parent.as_usize()].rank = order;
             }
-            self.cols[parent.as_usize()].rank = order;
         }
+
+        let mut order = Array::new(ncols.as_usize())?;
+        order.resize(ncols.as_usize(), Self::EMPTY)?;
+        for j in I::range(I::ZERO, ncols) {
+            let col = &self.cols[j.as_usize()];
+            order[col.rank.as_usize()] = j;
+        }
+        Ok(order)
     }
 
     fn detect(&mut self, start: I, length: I) {
@@ -1053,7 +1063,7 @@ impl<I: ColamdInt> Colamd<I> {
                     let weigth = self.cols[next.as_usize()].weight;
                     self.cols[ptr.as_usize()].weight += weigth;
                     self.cols[next.as_usize()].weight = ptr;
-                    self.cols[next.as_usize()].kill();
+                    self.cols[next.as_usize()].hide();
                     self.cols[next.as_usize()].rank = Self::EMPTY;
                     self.cols[prev.as_usize()].next = self.cols[next.as_usize()].next;
                     next = self.cols[next.as_usize()].next;

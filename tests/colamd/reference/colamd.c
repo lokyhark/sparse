@@ -2056,15 +2056,6 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	    DEBUG1 (("Resurrect Pivot_row %d deg: %d\n",
 			pivot_row, pivot_row_degree)) ;
 	}
-	for (int r = 0; r < n_row; r++) {
-           printf("row = %d, start = %d, length = %d, degree = %d, mark = %d\n", r, Row[r].start, Row[r].length, Row[r].shared1.degree, Row[r].shared2.mark);
-       }
-
-       for (int c = 0; c < n_col; c++) {
-          printf("col = %d, start = %d, length = %d, weight = %d, rank = %d, prev = %d, next = %d\n",
-              c, Col[c].start, Col[c].length, Col[c].shared1.thickness, Col[c].shared2.score,
-              Col[c].shared3.prev, Col[c].shared4.degree_next);
-       }
     }
 
     /* === All principal columns have now been ordered ====================== */
@@ -2107,7 +2098,6 @@ PRIVATE void order_children
     Int order ;			/* column's order */
 
     /* === Order each non-principal column ================================== */
-
     for (i = 0 ; i < n_col ; i++)
     {
 	/* find an un-ordered non-principal column */

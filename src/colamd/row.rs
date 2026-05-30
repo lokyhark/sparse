@@ -14,15 +14,6 @@ pub struct ColamdRow<I: ColamdInt> {
 }
 
 impl<I: ColamdInt> ColamdRow<I> {
-    pub fn new() -> Self {
-        Self {
-            start: I::ZERO,
-            length: I::ZERO,
-            degree: I::ZERO,
-            mark: -I::ONE,
-        }
-    }
-
     pub fn alive(&self) -> bool {
         self.mark >= I::ZERO
     }

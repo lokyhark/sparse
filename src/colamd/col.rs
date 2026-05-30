@@ -25,7 +25,15 @@ impl<I: ColamdInt> ColamdCol<I> {
         self.start < I::ZERO
     }
 
+    pub fn dead_principal(&self) -> bool {
+        self.start == I::NEG
+    }
+
     pub fn kill(&mut self) {
         self.start = I::NEG;
+    }
+
+    pub fn hide(&mut self) {
+        self.start = I::NEG * I::TWO;
     }
 }
