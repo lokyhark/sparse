@@ -5,7 +5,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-/// A contiguous, homogeneous, invariant, non-empty and heap allocated collections of values.
+/// A contiguous, homogeneous, invariant and heap allocated collections of values.
 #[derive(Debug)]
 pub struct Array<T> {
     /// Pointer to the heap allocated array.
@@ -16,11 +16,13 @@ pub struct Array<T> {
     cap: usize,
 }
 
+/// Errors that can occur when creating or modifying an array.
 #[derive(Debug)]
 pub struct ArrayError {
     kind: ArrayErrorKind,
 }
 
+/// Kinds of errors that can occur when creating or modifying an array.
 #[derive(Debug)]
 enum ArrayErrorKind {
     /// Zero capacity requested.
@@ -70,7 +72,8 @@ impl From<ArrayErrorKind> for ArrayError {
     }
 }
 
-impl<T> Array<T> {
+impl<T: Clone> Array<T> {
+    /// Creates a new array with the given capacity.
     pub fn new(capacity: usize) -> Result<Self, ArrayError> {
         // Empty arrays not supported.
         if capacity == 0 {
@@ -95,33 +98,30 @@ impl<T> Array<T> {
             return Err(ArrayErrorKind::AllocError.into());
         }
 
-        let array = Self {
-            ptr: ptr.cast(),
-            len: 0,
-            cap: capacity,
-        };
+        let array = Self { ptr: ptr.cast(), len: 0, cap: capacity };
         Ok(array)
     }
 
-    /// Return array length.
+    /// Returns array length.
     pub fn length(&self) -> usize {
         self.len
     }
 
-    /// Return array capacity.
+    /// Returns array capacity.
     pub fn capacity(&self) -> usize {
         self.cap
     }
 
-    /// Clear the array.
+    /// Clears the array.
     pub fn clear(&mut self) {
         // SAFETY: Entries do not need drop.
         self.len = 0;
     }
 
-    /// Push a value to the array.
+    /// Pushes a value to the array.
     ///
     /// # Errors
+    ///
     /// Returns an error if the array is full.
     pub fn push(&mut self, element: T) -> Result<(), ArrayError> {
         if self.len == self.cap {
@@ -134,9 +134,18 @@ impl<T> Array<T> {
         self.len += 1;
         Ok(())
     }
+
+    pub fn resize(&mut self, length: usize, value: T) -> Result<(), ArrayError> {
+        if length > self.cap {
+            return Err(ArrayErrorKind::CapacityOverflow.into());
+        }
+        self.len = length;
+        self.fill(value);
+        Ok(())
+    }
 }
 
-impl<T> Clone for Array<T> {
+impl<T: Clone> Clone for Array<T> {
     fn clone(&self) -> Self {
         let mut clone = Self::new(self.cap).expect("failed to clone array");
         // SAFETY: We have exclusive access to the clone and capacity >= length.

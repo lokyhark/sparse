@@ -1,4 +1,4 @@
-use crate::{Index, Scalar, array::Array};
+use crate::{Scalar, array::Array, int::Int};
 
 /// Coordinate format (COO) sparse pattern.
 pub type CooPat<I> = CoordinatePattern<I>;
@@ -71,9 +71,9 @@ pub type CooMat<I, S> = CoordinateMatrix<I, S>;
 /// |---------------------------------------------------------|-------------------------------------------------------------------------|
 /// | [`new(nrows, ncols, capacity)`](CoordinatePattern::new) | Creates a new coordinate pattern with the given dimensions and capacity.|
 /// | [`push(row, col)`](CoordinatePattern::push)             | Push a new entry to the pattern.                                        |
-/// | [`iter()`](CoordinatePattern::iter)                     | Returns an iterator over all entries in the pattern.                    |
+/// | [`iter()`](CoordinatePattern::iter)                     | Return an iterator over all entries in the pattern.                    |
 #[derive(Clone, Debug)]
-pub struct CoordinatePattern<I: Index> {
+pub struct CoordinatePattern<I: Int> {
     /// Number of rows.
     nrows: I,
     /// Number of columns.
@@ -82,7 +82,7 @@ pub struct CoordinatePattern<I: Index> {
     entries: Array<(I, I)>,
 }
 
-impl<I: Index> CoordinatePattern<I> {
+impl<I: Int> CoordinatePattern<I> {
     /// Creates a new empty coordinate pattern with the given dimensions and capacity.
     ///
     /// # Examples
@@ -101,8 +101,6 @@ impl<I: Index> CoordinatePattern<I> {
     /// - `capacity` is not positive.
     /// - memory allocation fails.
     pub fn new(nrows: I, ncols: I, capacity: usize) -> Self {
-        assert!(nrows > I::zero(), "number of rows must be positive");
-        assert!(ncols > I::zero(), "number of columns must be positive");
         assert!(capacity != 0, "capacity must be positive");
         match Array::new(capacity) {
             Ok(entries) => Self { nrows, ncols, entries },
@@ -189,8 +187,6 @@ impl<I: Index> CoordinatePattern<I> {
     /// - `col` is out of bounds.
     /// - capacity overflow.
     pub fn push(&mut self, row: I, col: I) {
-        assert!(row < self.nrows, "row index `{}` out of bounds; must be in [{};{})", row, 0, self.nrows());
-        assert!(col < self.ncols, "column index `{}` out of bounds; must be in [{};{})", col, 0, self.ncols());
         match self.entries.push((row, col)) {
             Ok(()) => (),
             Err(err) => panic!("failed to push entry to pattern: {err}"),
@@ -304,10 +300,10 @@ impl<I: Index> CoordinatePattern<I> {
 /// |---------------------------------------------------------|-----------------------------------------------------------------------------------------|
 /// | [`new(nrows, ncols, capacity)`](CoordinateMatrix::new)  | Creates a new coordinate matrix with the given dimensions and capacity.                 |
 /// | [`push(row, col, value)`](CoordinateMatrix::push)       | Push a new entry to the matrix.                                                         |
-/// | [`iter()`](CoordinateMatrix::iter)                      | Returns an iterator over all entries in the matrix with shared reference to values.     |
-/// | [`iter_mut()`](CoordinateMatrix::iter_mut)              | Returns an iterator over all entries in the matrix with exclusive reference to values.  |
+/// | [`iter()`](CoordinateMatrix::iter)                      | Return an iterator over all entries in the matrix with shared reference to values.     |
+/// | [`iter_mut()`](CoordinateMatrix::iter_mut)              | Return an iterator over all entries in the matrix with exclusive reference to values.  |
 #[derive(Clone, Debug)]
-pub struct CoordinateMatrix<I: Index, S: Scalar> {
+pub struct CoordinateMatrix<I: Int, S: Scalar> {
     /// Number of rows.
     nrows: I,
     /// Number of columns.
@@ -316,7 +312,7 @@ pub struct CoordinateMatrix<I: Index, S: Scalar> {
     entries: Array<(I, I, S)>,
 }
 
-impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
+impl<I: Int, S: Scalar> CoordinateMatrix<I, S> {
     /// Creates a new empty coordinate matrix with the given dimensions and capacity.
     ///
     /// # Examples
@@ -336,8 +332,6 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
     /// - `capacity` is not positive.
     /// - Memory allocation fails.
     pub fn new(nrows: I, ncols: I, capacity: usize) -> Self {
-        assert!(nrows > I::zero(), "number of rows must be positive");
-        assert!(ncols > I::zero(), "number of columns must be positive");
         assert!(capacity != 0, "capacity must be positive");
         match Array::new(capacity) {
             Ok(entries) => Self { nrows, ncols, entries },
@@ -422,7 +416,7 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
         self.entries.clear();
     }
 
-    /// Push new entry to the matrix.
+    /// Pushes new entry to the matrix.
     ///
     /// # Examples
     ///
@@ -442,8 +436,6 @@ impl<I: Index, S: Scalar> CoordinateMatrix<I, S> {
     /// - `col` is out of bounds.
     /// - capacity overflow.
     pub fn push(&mut self, row: I, col: I, value: S) {
-        assert!(row < self.nrows, "row index `{}` out of bounds; must be in [{};{})", row, 0, self.nrows());
-        assert!(col < self.ncols, "column index `{}` out of bounds; must be in [{};{})", col, 0, self.ncols());
         match self.entries.push((row, col, value)) {
             Ok(()) => (),
             Err(err) => panic!("failed to push entry to matrix: {err}"),
