@@ -1,6 +1,5 @@
 use std::{
     fmt::{Debug, Display},
-    isize,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign},
 };
 
@@ -55,7 +54,7 @@ pub trait Int:
     /// Convert to `usize`.
     fn as_usize(self) -> usize;
     /// Return an iterator over the range `[start, stop)`.
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator;
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self>;
     /// Return the integer square root of `self`.
     fn isqrt(self) -> Self;
 }
@@ -69,7 +68,7 @@ impl Int for u8 {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -87,7 +86,7 @@ impl Int for u16 {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -105,7 +104,7 @@ impl Int for u32 {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -119,11 +118,12 @@ impl Int for u64 {
     const ONE: Self = 1;
     const TEN: Self = 10;
 
+    #[allow(clippy::cast_possible_truncation)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -141,7 +141,7 @@ impl Int for u128 {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -156,10 +156,10 @@ impl Int for usize {
     const TEN: Self = 10;
 
     fn as_usize(self) -> usize {
-        self as usize
+        self
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -173,11 +173,12 @@ impl Int for i8 {
     const ONE: Self = 1;
     const TEN: Self = 10;
 
+    #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -191,11 +192,12 @@ impl Int for i16 {
     const ONE: Self = 1;
     const TEN: Self = 10;
 
+    #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -209,11 +211,12 @@ impl Int for i32 {
     const ONE: Self = 1;
     const TEN: Self = 10;
 
+    #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -227,11 +230,13 @@ impl Int for i64 {
     const ONE: Self = 1;
     const TEN: Self = 10;
 
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -245,11 +250,12 @@ impl Int for i128 {
     const ONE: Self = 1;
     const TEN: Self = 10;
 
+    #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -263,11 +269,12 @@ impl Int for isize {
     const ONE: Self = 1;
     const TEN: Self = 10;
 
+    #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 

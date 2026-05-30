@@ -4,7 +4,7 @@ use crate::{array::Array, colamd::int::ColamdInt};
 ///
 /// # See Also
 ///
-/// [`colamd`]
+/// [`colamd`](crate::colamd::colamd)
 #[derive(Clone, Debug)]
 pub struct ColamdResult<I: ColamdInt> {
     /// Number of columns alive.

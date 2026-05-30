@@ -8,7 +8,7 @@ use super::int::ColamdInt;
 ///
 /// # See Also
 ///
-/// [`colamd`]
+/// [`colamd`](crate::colamd::colamd)
 #[derive(Debug)]
 pub struct ColamdError<I: ColamdInt> {
     /// Error kind.
@@ -32,7 +32,7 @@ pub(super) enum ColamdErrorKind<I: ColamdInt> {
     InvalidColptrSliceLength { actual: usize, expected: usize },
     /// First element of column pointer must be `0`.
     InvalidFirstColPtr { ptr: I },
-    /// Column pointers must be in [0;isize::MAX].
+    /// Column pointers must be in `[0;isize::MAX]`.
     InvalidColPtr { index: usize, ptr: I },
     /// Each column must have a length `>= 0`.
     DecreasingColptrSlice { col: usize, start: I, stop: I },

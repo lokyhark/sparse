@@ -1,3 +1,55 @@
+//! COLAMD Algorithm module.
+//!
+//! The main entry point of the COLAMD algorithm is the [`colamd`] function.
+//!
+//! ```
+//! use sparse::colamd::colamd;
+//!
+//! // Matrix  5-by-4
+//! // x 0 x 0
+//! // x 0 x x
+//! // 0 x x 0
+//! // 0 0 x x
+//! // x x 0 0
+//! let rowind = [0, 1, 4, 2, 4, 0, 1, 2, 3, 1, 3];
+//! let colptr = [0, 3, 5, 9, 11];
+//! // Execute COLAMD algorithm.
+//! let result = sparse::colamd::colamd(5, 4, &colptr, &rowind).unwrap();
+//! // Retrieve ordering.
+//! let order = result.order();
+//! assert_eq!(order[0], 1);
+//! assert_eq!(order[1], 0);
+//! assert_eq!(order[2], 2);
+//! assert_eq!(order[3], 3);
+//! ```
+//!
+//! If full control over allocation and potential workspace reuse is possible,
+//! maximum performances can be reached with [`Colamd`] workspace:
+//!
+//! ```
+//! use sparse::colamd::Colamd;
+//! # use sparse::colamd::ColamdError;
+//! # fn main() -> Result<(), ColamdError<i32>> {
+//! // Allocate workspace for 5 rows, 4 columns, 11 non zero entries and 10 elbow room capacity.
+//! let mut colamd = Colamd::alloc(5, 4, 11, 10)?;
+//! // Determine ordering.
+//! let order = colamd.run(5, 4, &[0, 3, 5, 9, 11], &[0, 1, 4, 2, 4, 0, 1, 2, 3, 1, 3])?;
+//! // The workspace can be reused without any reallocation.
+//! let order = colamd.run(5, 4, &[0, 3, 5, 9, 11], &[0, 1, 4, 2, 4, 0, 1, 2, 3, 1, 3])?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # References
+//!
+//! - T. A. Davis, J. R. Gilbert, S. Larimore, E. Ng,<br />
+//!   *An approximate column minimum degree ordering algorithm*,<br />
+//!   ACM Transactions on Mathematical Software, vol. 30, no. 3., pp. 353-376, 2004.<br />
+//!   <https://doi.org/10.1145/1024074.1024079>
+//! - T. A. Davis, J. R. Gilbert, S. Larimore, E. Ng,<br />
+//!   *Algorithm 836: COLAMD, an approximate column minimum degree ordering algorithm*,<br />
+//!   ACM Transactions on Mathematical Software, vol. 30, no. 3., pp. 377-380, 2004.<br />
+//!   <https://doi.org/10.1145/1024074.1024080>
 use crate::array::Array;
 
 mod col;
@@ -11,12 +63,14 @@ mod size;
 
 use col::ColamdCol;
 use config::ColamdConfig;
-use error::{ColamdError, ColamdErrorKind};
-use int::ColamdInt;
-use result::ColamdResult;
+use error::ColamdErrorKind;
 use row::ColamdRow;
 use score::ColamdScore;
 use size::ColamdSize;
+
+pub use error::ColamdError;
+pub use int::ColamdInt;
+pub use result::ColamdResult;
 
 /// COLAMD algorithm.
 ///
@@ -30,13 +84,13 @@ use size::ColamdSize;
 ///
 /// # References
 ///
-/// - T. A. Davis, J. R. Gilbert, S. Larimore, E. Ng,
-///   *An approximate column minimum degree ordering algorithm*,
-///   ACM Transactions on Mathematical Software, vol. 30, no. 3., pp. 353-376, 2004.
+/// - T. A. Davis, J. R. Gilbert, S. Larimore, E. Ng,<br />
+///   *An approximate column minimum degree ordering algorithm*,<br />
+///   ACM Transactions on Mathematical Software, vol. 30, no. 3., pp. 353-376, 2004.<br />
 ///   <https://doi.org/10.1145/1024074.1024079>
-/// - T. A. Davis, J. R. Gilbert, S. Larimore, E. Ng,
-///   *Algorithm 836: COLAMD, an approximate column minimum degree ordering algorithm*,
-///   ACM Transactions on Mathematical Software, vol. 30, no. 3., pp. 377-380, 2004.
+/// - T. A. Davis, J. R. Gilbert, S. Larimore, E. Ng,<br />
+///   *Algorithm 836: COLAMD, an approximate column minimum degree ordering algorithm*,<br />
+///   ACM Transactions on Mathematical Software, vol. 30, no. 3., pp. 377-380, 2004.<br />
 ///   <https://doi.org/10.1145/1024074.1024080>
 pub fn colamd<I: ColamdInt>(nrows: I, ncols: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult<I>, ColamdError<I>> {
     // Check inputs.
@@ -48,6 +102,23 @@ pub fn colamd<I: ColamdInt>(nrows: I, ncols: I, colptr: &[I], rowind: &[I]) -> R
     colamd.exec(size.nrows, size.ncols, size.nnz, colptr, rowind)
 }
 
+/// COLAMD algorithm workspace.
+///
+/// # Examples
+///
+/// ```
+/// use sparse::colamd::Colamd;
+/// # use sparse::colamd::ColamdError;
+/// # fn main() -> Result<(), ColamdError<i32>> {
+/// let mut colamd = Colamd::alloc(5, 4, 11, 10)?;
+/// let order = colamd.run(5, 4, &[0, 3, 5, 9, 11], &[0, 1, 4, 2, 4, 0, 1, 2, 3, 1, 3])?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// # See Also
+///
+/// [`colamd`]
 #[derive(Debug)]
 pub struct Colamd<I: ColamdInt> {
     /// COLAMD algorithm configuration.
@@ -77,6 +148,7 @@ impl<I: ColamdInt> Colamd<I> {
     /// Return a [`ColamdError`] if one of the following conditions hold:
     /// - Number of rows is zero (`nrows == 0`),
     /// - Number of columns is zero (`ncols == 0`).
+    /// - Elbow room is too short (`elbow < ncols`).
     /// - Workspace memory allocation fails.
     pub fn alloc(nrows: usize, ncols: usize, nnz: usize, elbow: usize) -> Result<Self, ColamdError<I>> {
         // Check number of rows.
@@ -115,6 +187,7 @@ impl<I: ColamdInt> Colamd<I> {
     }
 
     /// Set the COLAMD configuration.
+    #[must_use]
     pub fn with_config(mut self, config: ColamdConfig<I>) -> Self {
         self.config = config;
         self
@@ -123,13 +196,13 @@ impl<I: ColamdInt> Colamd<I> {
     /// Check COLAMD algorithm input arguments and return the required workspace size.
     ///
     /// Following proporties are checked:
-    /// - 0 <= nrows < isize::MAX + 1
-    /// - 0 <= ncols < isize::MAX + 1
-    /// - colptr.len() = ncols + 1
-    /// - colptr[0] = 0
-    /// - colptr[ncols + 1] = nnz
-    /// - 0 <= nnz < isize::MAX + 1
-    /// - rowind.len() = nnz
+    /// - `0 <= nrows < isize::MAX + 1`
+    /// - `0 <= ncols < isize::MAX + 1`
+    /// - `colptr.len() = ncols + 1`
+    /// - `colptr[0] = 0`
+    /// - `colptr[ncols + 1] = nnz`
+    /// - `0 <= nnz < isize::MAX + 1`
+    /// - `rowind.len() = nnz`
     ///
     /// Following properties still need to be checked:
     /// - colptr is a non-decreasing sequence
@@ -165,8 +238,8 @@ impl<I: ColamdInt> Colamd<I> {
         // CHECKPOINT:
         // 0 <= nrows < isize::MAX + 1
         // 0 <= ncols < isize::MAX + 1
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
 
         // Check colptr.
         // colptr must hold multiple invariants:
@@ -193,8 +266,8 @@ impl<I: ColamdInt> Colamd<I> {
         // 0 <= nrows < isize::MAX + 1
         // 0 <= ncols < isize::MAX + 1
         // colptr.len() = ncols + 1
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert_eq!(colptr.len(), ncols.as_usize() + 1, "invalid col pointers slice length: actual={}, expect={}", colptr.len(), ncols.as_usize() + 1);
 
         // SAFETY: colptr is not empty (see previous checkpoint).
@@ -230,8 +303,8 @@ impl<I: ColamdInt> Colamd<I> {
         // colptr[0] = 0
         // colptr[ncols + 1] = nnz
         // 0 <= nnz < isize::MAX + 1
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert_eq!(colptr.len(), ncols.as_usize() + 1, "invalid col pointers slice length: actual={}, expect={}", colptr.len(), ncols.as_usize() + 1);
         debug_assert_eq!(colptr[0], I::ZERO, "invalid first column pointer: actual={}, expect=0", colptr[0]);
         debug_assert_eq!(colptr[ncols.as_usize()], nnz, "invalid number of nnz: actual={}, expect={nnz}", colptr[ncols.as_usize()]);
@@ -259,8 +332,8 @@ impl<I: ColamdInt> Colamd<I> {
         // colptr[ncols + 1] = nnz
         // 0 <= nnz < isize::MAX + 1
         // rowind.len() = nnz
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert_eq!(colptr.len(), ncols.as_usize() + 1, "invalid col pointers slice length: actual={}, expect={}", colptr.len(), ncols.as_usize() + 1);
         debug_assert_eq!(colptr[0], I::ZERO, "invalid first column pointer: actual={}, expect=0", colptr[0]);
         debug_assert_eq!(colptr[ncols.as_usize()], nnz, "invalid number of nnz: actual={}, expect={nnz}", colptr[ncols.as_usize()]);
@@ -278,6 +351,17 @@ impl<I: ColamdInt> Colamd<I> {
 
     /// Run the COLAMD algorithm on a matrix of size `nrows` by `ncols` with `nnz` non zeros represented
     /// in column compressed form by `colptr` and `rowind`.
+    ///
+    /// # Errors
+    ///
+    /// On input following invariants must hold or an error is returned:
+    /// - `0 <= nrows < isize::MAX + 1`
+    /// - `0 <= ncols < isize::MAX + 1`
+    /// - `colptr.len() = ncols + 1`
+    /// - `colptr[0] = 0`
+    /// - `colptr[ncols + 1] = nnz`
+    /// - `0 <= nnz < isize::MAX + 1`
+    /// - `rowind.len() = nnz`
     pub fn run(&mut self, nrows: I, ncols: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult<I>, ColamdError<I>> {
         // Check input.
         let size = Colamd::check(nrows, ncols, colptr, rowind)?;
@@ -286,15 +370,6 @@ impl<I: ColamdInt> Colamd<I> {
     }
 
     /// Execute the COLAMD algorithm.
-    ///
-    /// On input following invariants must hold:
-    /// - 0 <= nrows < isize::MAX + 1
-    /// - 0 <= ncols < isize::MAX + 1
-    /// - colptr.len() = ncols + 1
-    /// - colptr[0] = 0
-    /// - colptr[ncols + 1] = nnz
-    /// - 0 <= nnz < isize::MAX + 1
-    /// - rowind.len() = nnz
     fn exec(&mut self, nrows: I, ncols: I, nnz: I, colptr: &[I], rowind: &[I]) -> Result<ColamdResult<I>, ColamdError<I>> {
         // CHECKPOINT:
         // 0 <= nrows < isize::MAX + 1
@@ -304,8 +379,8 @@ impl<I: ColamdInt> Colamd<I> {
         // colptr[ncols + 1] = nnz
         // 0 <= nnz < isize::MAX + 1
         // rowind.len() = nnz
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert_eq!(colptr.len(), ncols.as_usize() + 1, "invalid col pointers slice length: actual={}, expect={}", colptr.len(), ncols.as_usize() + 1);
         debug_assert_eq!(colptr[0], I::ZERO, "invalid first column pointer: actual={}, expect=0", colptr[0]);
         debug_assert_eq!(colptr[ncols.as_usize()], nnz, "invalid number of nnz: actual={}, expect={nnz}", colptr[ncols.as_usize()]);
@@ -336,22 +411,22 @@ impl<I: ColamdInt> Colamd<I> {
     /// Initialize the COLAMD algorithm.
     ///
     /// On input following invariants must hold:
-    /// - 0 <= nrows < isize::MAX + 1
-    /// - 0 <= ncols < isize::MAX + 1
-    /// - colptr.len() = ncols + 1
-    /// - colptr[0] = 0
-    /// - colptr[ncols + 1] = nnz
-    /// - 0 <= nnz < isize::MAX + 1
-    /// - rowind.len() = nnz
+    /// - `0 <= nrows < isize::MAX + 1`
+    /// - `0 <= ncols < isize::MAX + 1`
+    /// - `colptr.len() = ncols + 1`
+    /// - `colptr[0] = 0`
+    /// - `colptr[ncols + 1] = nnz`
+    /// - `0 <= nnz < isize::MAX + 1`
+    /// - `rowind.len() = nnz`
     ///
     /// On output following invariants hold:
-    /// - 0 <= nrows < isize::MAX + 1
-    /// - 0 <= ncols < isize::MAX + 1
-    /// - colptr.len() = ncols + 1
-    /// - colptr[0] = 0
-    /// - colptr[ncols + 1] = nnz
-    /// - 0 <= nnz < isize::MAX + 1
-    /// - rowind.len() = nnz
+    /// - `0 <= nrows < isize::MAX + 1`
+    /// - `0 <= ncols < isize::MAX + 1`
+    /// - `colptr.len() = ncols + 1`
+    /// - `colptr[0] = 0`
+    /// - `colptr[ncols + 1] = nnz`
+    /// - `0 <= nnz < isize::MAX + 1`
+    /// - `rowind.len() = nnz`
     /// - colptr pointers are valid indices
     /// - colptr is ordered
     /// - rowind indices are valid indices
@@ -369,8 +444,8 @@ impl<I: ColamdInt> Colamd<I> {
         // colptr[ncols + 1] = nnz
         // 0 <= nnz < isize::MAX + 1
         // rowind.len() = nnz
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert_eq!(colptr.len(), ncols.as_usize() + 1, "invalid col pointers slice length: actual={}, expect={}", colptr.len(), ncols.as_usize() + 1);
         debug_assert_eq!(colptr[0], I::ZERO, "invalid first column pointer: actual={}, expect=0", colptr[0]);
         debug_assert_eq!(colptr[ncols.as_usize()], nnz, "invalid number of nnz: actual={}, expect={nnz}", colptr[ncols.as_usize()]);
@@ -416,26 +491,6 @@ impl<I: ColamdInt> Colamd<I> {
             start = stop;
         }
 
-        // CHECKPOINT:
-        // 0 <= nrows < isize::MAX + 1
-        // 0 <= ncols < isize::MAX + 1
-        // colptr.len() = ncols + 1
-        // colptr[0] = 0
-        // colptr[ncols + 1] = nnz
-        // 0 <= nnz < isize::MAX + 1
-        // rowind.len() = nnz
-        // colptr is ordered
-        // colptr pointers are valid indices
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
-        debug_assert_eq!(colptr.len(), ncols.as_usize() + 1, "invalid col pointers slice length: actual={}, expect={}", colptr.len(), ncols.as_usize() + 1);
-        debug_assert_eq!(colptr[0], I::ZERO, "invalid first column pointer: actual={}, expect=0", colptr[0]);
-        debug_assert_eq!(colptr[ncols.as_usize()], nnz, "invalid number of nnz: actual={}, expect={nnz}", colptr[ncols.as_usize()]);
-        debug_assert!(MIN < nnz.as_usize() && nnz.as_usize() <= MAX, "invalid number of non zeros: nnz={nnz}, min={MIN}, max={MAX}");
-        debug_assert_eq!(rowind.len(), nnz.as_usize(), "invalid row indices slice length: actual={}, expect={nnz}", rowind.len());
-        debug_assert!(colptr.is_sorted(), "unsorted column pointers");
-        debug_assert!(colptr.iter().all(|&i| I::ZERO <= i && i <= nnz), "invalid column pointers");
-
         // Resize and initialize rows.
         // Rows must be initialized because they will be accessed in random order below.
         let default = ColamdRow {
@@ -465,9 +520,9 @@ impl<I: ColamdInt> Colamd<I> {
                 // Check if row indices in column is ordered and unique.
                 if row <= prev {
                     return Err(ColamdErrorKind::UnorderedRowIndSlice { col: j, ptr }.into());
-                } else {
-                    prev = row;
                 }
+                prev = row;
+
                 // SAFETY: row is valid index because >= 0 and < nrows which is a valid index.
                 let idx = row.as_usize();
                 let row = &mut self.rows[idx];
@@ -488,8 +543,8 @@ impl<I: ColamdInt> Colamd<I> {
         // colptr is ordered
         // rowind indices are valid indices
         // rowind is ordered by column
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert_eq!(colptr.len(), ncols.as_usize() + 1, "invalid col pointers slice length: actual={}, expect={}", colptr.len(), ncols.as_usize() + 1);
         debug_assert_eq!(colptr[0], I::ZERO, "invalid first column pointer: actual={}, expect=0", colptr[0]);
         debug_assert_eq!(colptr[ncols.as_usize()], nnz, "invalid number of nnz: actual={}, expect={nnz}", colptr[ncols.as_usize()]);
@@ -570,8 +625,8 @@ impl<I: ColamdInt> Colamd<I> {
         // 0 <= nrows < isize::MAX + 1
         // 0 <= ncols < isize::MAX + 1
         // 0 <= nnz < isize::MAX + 1
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert!(MIN < nnz.as_usize() && nnz.as_usize() <= MAX, "invalid number of non zeros: nnz={nnz}, min={MIN}, max={MAX}");
 
         // Compute dense row and column thresholds.
@@ -711,15 +766,15 @@ impl<I: ColamdInt> Colamd<I> {
         Ok(ColamdScore { cols, rows, max_degree, min_score })
     }
 
-    pub fn find(&mut self, nrows: I, ncols: I, nnz: I, cols: I, mut min_score: I, mut max_degree: I) -> Result<(), ColamdError<I>> {
+    fn find(&mut self, nrows: I, ncols: I, nnz: I, cols: I, mut min_score: I, mut max_degree: I) -> Result<(), ColamdError<I>> {
         // CHECKPOINT:
         // 0 <= nrows < isize::MAX + 1
         // 0 <= ncols < isize::MAX + 1
         // 0 <= nnz < isize::MAX + 1
         // cols <= ncols
         // 0 < min_score <= ncols
-        debug_assert!(MIN <= nrows.as_usize() && nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}",);
-        debug_assert!(MIN <= ncols.as_usize() && ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
+        debug_assert!(nrows.as_usize() <= MAX, "invalid number of rows: nrows={nrows}, min={MIN}, max={MAX}");
+        debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert!(MIN < nnz.as_usize() && nnz.as_usize() <= MAX, "invalid number of non zeros: nnz={nnz}, min={MIN}, max={MAX}");
         debug_assert!(I::ZERO < cols && cols <= ncols, "invalid number of alive columns: cols={}, min={}, max={}", cols, I::ZERO, ncols);
         debug_assert!(min_score > I::ZERO && min_score <= ncols, "invalid minimum score");
@@ -733,9 +788,8 @@ impl<I: ColamdInt> Colamd<I> {
                 let head = self.degree[score.as_usize()];
                 if head != Self::EMPTY {
                     break head;
-                } else {
-                    score += I::ONE;
                 }
+                score += I::ONE;
             };
             debug_assert!(pivot_col_j >= I::ZERO && pivot_col_j <= ncols);
             // Remove pivot column from degree list by placing next column as head.
@@ -759,7 +813,7 @@ impl<I: ColamdInt> Colamd<I> {
             // Compact if need room for pivot row.
             let memory = pivot_col_score.min(ncols - k);
             if memory.as_usize() > (self.inds.capacity() - self.inds.length()) {
-                self.compact(nrows, ncols)
+                self.compact(nrows, ncols);
             }
 
             // Pivot row start point.
@@ -831,7 +885,7 @@ impl<I: ColamdInt> Colamd<I> {
                 let score = self.cols[j.as_usize()].rank;
                 let prev = self.cols[j.as_usize()].prev;
                 let next = self.cols[j.as_usize()].next;
-                debug_assert!(weight > I::ZERO, "weight={}", weight);
+                debug_assert!(weight > I::ZERO, "weight={weight}");
                 debug_assert!(score >= I::ZERO);
                 debug_assert!(score <= ncols);
                 // Clear column.
@@ -921,11 +975,11 @@ impl<I: ColamdInt> Colamd<I> {
                     col.rank = score;
                     hash %= ncols + I::ONE;
                     let head = self.degree[hash.as_usize()];
-                    let first = if head != Self::EMPTY {
-                        std::mem::replace(&mut col.prev, j)
-                    } else {
+                    let first = if head == Self::EMPTY {
                         self.degree[hash.as_usize()] = -(j + I::TWO);
                         -(head + I::TWO)
+                    } else {
+                        std::mem::replace(&mut col.prev, j)
                     };
                     col.next = first;
                     col.prev = hash;

@@ -1,7 +1,6 @@
 use std::{
     fmt::{Debug, Display},
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
-    usize,
 };
 
 mod private {
@@ -13,6 +12,9 @@ mod private {
     impl Seal for isize {}
 }
 
+/// COLAMD algorithm supported integer types.
+///
+/// This trait is sealed to prevent downstream implementations.
 pub trait ColamdInt:
     Sized
     + Copy
@@ -61,9 +63,10 @@ pub trait ColamdInt:
     fn as_usize(self) -> usize;
     /// Return an iterator over the range `[start, stop)`.
     #[doc(hidden)]
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator;
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self>;
     /// Return the integer square root of `self`.
     #[doc(hidden)]
+    #[must_use]
     fn isqrt(self) -> Self;
 }
 
@@ -81,11 +84,12 @@ impl ColamdInt for i16 {
     }
 
     #[cfg(not(debug_assertions))]
+    #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -108,11 +112,12 @@ impl ColamdInt for i32 {
     }
 
     #[cfg(not(debug_assertions))]
+    #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -135,11 +140,13 @@ impl ColamdInt for i64 {
     }
 
     #[cfg(not(debug_assertions))]
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
@@ -162,11 +169,12 @@ impl ColamdInt for isize {
     }
 
     #[cfg(not(debug_assertions))]
+    #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
     }
 
-    fn range(start: Self, stop: Self) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
 
