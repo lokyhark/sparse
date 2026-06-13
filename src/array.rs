@@ -118,6 +118,12 @@ impl<T: Clone> Array<T> {
         self.len = 0;
     }
 
+    /// Truncate the array.
+    pub fn truncate(&mut self, length: usize) {
+        assert!(self.len >= length);
+        self.len = length;
+    }
+
     /// Pushes a value to the array.
     ///
     /// # Errors

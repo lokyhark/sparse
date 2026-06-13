@@ -1581,7 +1581,6 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
     DEBUG1 (("colamd: Ordering, n_col2=%d\n", n_col2)) ;
 
     /* === Order the columns ================================================ */
-
     for (k = 0 ; k < n_col2 ; /* 'k' is incremented below */)
     {
 
@@ -1640,7 +1639,6 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	pivot_col_thickness = Col [pivot_col].shared1.thickness ;
 	k += pivot_col_thickness ;
 	ASSERT (pivot_col_thickness > 0) ;
-	DEBUG3 (("Pivot col: %d thick %d\n", pivot_col, pivot_col_thickness)) ;
 
 	/* === Garbage_collection, if necessary ============================= */
 
@@ -1670,6 +1668,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	/* tag pivot column as having been visited so it isn't included */
 	/* in merged pivot row */
 	Col [pivot_col].shared1.thickness = -pivot_col_thickness ;
+
 
 	/* pivot row is the union of all rows in the pivot column pattern */
 	cp = &A [Col [pivot_col].start] ;
@@ -1949,9 +1948,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	/* The approximate external column degree is now computed.  */
 
 	/* === Supercolumn detection ======================================== */
-
 	DEBUG3 (("** Supercolumn detection phase. **\n")) ;
-
 	detect_super_cols (
 
 #ifndef NDEBUG
@@ -2042,6 +2039,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 
 	/* === Resurrect the new pivot row ================================== */
 
+
 	if (pivot_row_degree > 0)
 	{
 	    /* update pivot row length to reflect any cols that were killed */
@@ -2110,7 +2108,6 @@ PRIVATE void order_children
 	    {
 		parent = Col [parent].shared1.parent ;
 	    } while (!COL_IS_DEAD_PRINCIPAL (parent)) ;
-
 	    /* now, order all un-ordered non-principal columns along path */
 	    /* to this parent.  collapse tree at the same time */
 	    c = i ;
@@ -2254,7 +2251,6 @@ PRIVATE void detect_super_cols
 	    prev_c = super_c ;
 
 	    /* === Compare super_c with all columns after it ================ */
-
 	    for (c = Col [super_c].shared4.hash_next ;
 		 c != EMPTY ; c = Col [c].shared4.hash_next)
 	    {

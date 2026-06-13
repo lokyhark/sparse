@@ -1,3 +1,7 @@
+[workspace]
+resolver = "3"
+members = ["valid/colamd"]
+
 [package]
 name = "sparse"
 version = "0.5.0"
