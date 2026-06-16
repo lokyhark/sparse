@@ -2,7 +2,7 @@ use std::{
     error::Error,
     ffi::OsStr,
     fs::File,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
 };
 
@@ -19,8 +19,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let path = PathBuf::from(path);
     let mut paths = Vec::new();
     visit(&path, &mut paths)?;
-    println!("| {:^20} | {:^4} | {:^20} | {:^20} | {:^20} | {:^8} |", "name", "id", "nrows", "ncols", "nnz", "valid");
-    println!("| {0:-^20} | {0:-^4} | {0:-^20} | {0:-^20} | {0:-^20} | {0:-^8} |", "");
+    println!("| {:^40} | {:^8} | {:4} | {:^20} | {:^20} | {:^20} | {:^8} |", "name", "id", "kind", "nrows", "ncols", "nnz", "valid");
+    println!("| {0:-^40} | {0:-^8} | {0:-<4} | {0:-^20} | {0:-^20} | {0:-^20} | {0:-^8} |", "");
     for path in paths {
         match path.extension() {
             Some(ext) if ext == OsStr::new("gz") => (),
@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             buf.read_line(&mut line)?;
             let title = match line.get(..72) {
                 Some(slice) => match slice.split(';').next() {
-                    Some(slice) => slice.trim().to_owned(),
+                    Some(slice) => slice.trim().trim_end_matches('|').trim().to_owned(),
                     None => panic!("title not found"),
                 },
                 None => panic!("title not found"),
@@ -74,10 +74,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 None => panic!("kind not found"),
             };
 
-            match kind.get(1..3) {
-                Some("ua") => (),
-                _ => continue,
-            }
             let nrows: i32 = match line.get(14..28) {
                 Some(slice) => slice.trim().parse().unwrap_or_else(|_| panic!("failed to parse nrows")),
                 None => panic!("nrows not found"),
@@ -90,6 +86,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Some(slice) => slice.trim().parse().unwrap_or_else(|_| panic!("failed to parse nnz")),
                 None => panic!("nnz not found"),
             };
+            print!("| {title:40} | {key:>8} | {kind:4} | {nrows:20} | {ncols:20} | {nnz:20} |");
+            std::io::stdout().flush().unwrap();
+            match kind.get(1..3) {
+                Some("ua") => (),
+                _ => {
+                    println!(" {:^7} |", "🟣");
+                    continue;
+                }
+            }
             buf.read_line(&mut line)?;
             line.clear();
             for _ in 0..(lptr) {
@@ -99,7 +104,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             for ptr in line.split_whitespace() {
                 p.push(ptr.parse::<i32>().unwrap() - 1);
             }
-            print!("| {title:20} | {key:4} | {nrows:20} | {ncols:20} | {nnz:20} |");
+
             let len = unsafe { colamd_recommended(nnz, nrows, ncols) };
             if len == 0 {
                 panic!("colamd recommended error");
@@ -126,11 +131,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                 panic!("colamd error");
             }
 
-            // Check
+            // // Check
             let mut valid = true;
             for i in 0..ncols as usize {
                 if p[i] != order.order()[i] {
                     valid = false;
+                    println!("invalid order at index {i}: ref = {}, impl = {}", p[i], order.order()[i]);
                     break;
                 }
             }
