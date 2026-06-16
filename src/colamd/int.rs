@@ -61,6 +61,12 @@ pub trait ColamdInt:
     /// Convert to `usize`.
     #[doc(hidden)]
     fn as_usize(self) -> usize;
+    /// Convert to `f64`.
+    #[doc(hidden)]
+    fn as_f64(self) -> f64;
+    /// Convert from `f64`.
+    #[doc(hidden)]
+    fn from_f64(value: f64) -> Self;
     /// Return an iterator over the range `[start, stop)`.
     #[doc(hidden)]
     fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self>;
@@ -89,6 +95,14 @@ impl ColamdInt for i16 {
         self as usize
     }
 
+    fn as_f64(self) -> f64 {
+        self as f64
+    }
+
+    fn from_f64(value: f64) -> Self {
+        value as Self
+    }
+
     fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
@@ -115,6 +129,14 @@ impl ColamdInt for i32 {
     #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
+    }
+
+    fn as_f64(self) -> f64 {
+        self as f64
+    }
+
+    fn from_f64(value: f64) -> Self {
+        value as Self
     }
 
     fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
@@ -146,6 +168,14 @@ impl ColamdInt for i64 {
         self as usize
     }
 
+    fn as_f64(self) -> f64 {
+        self as f64
+    }
+
+    fn from_f64(value: f64) -> Self {
+        value as Self
+    }
+
     fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {
         start..stop
     }
@@ -172,6 +202,14 @@ impl ColamdInt for isize {
     #[allow(clippy::cast_sign_loss)]
     fn as_usize(self) -> usize {
         self as usize
+    }
+
+    fn as_f64(self) -> f64 {
+        self as f64
+    }
+
+    fn from_f64(value: f64) -> Self {
+        value as Self
     }
 
     fn range(start: Self, stop: Self) -> impl DoubleEndedIterator<Item = Self> {

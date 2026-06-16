@@ -634,9 +634,8 @@ impl<I: ColamdInt> Colamd<I> {
         // - 16 is representable by all unsigned integer types (ColamdInt which is sealed).
         // - ncols and nrows are representable by I (checked previously).
         // - dense_row_control and dense_col_control are non negative and less than nrows and ncols which are representable by I.
-        let dense_row_count = self.config.dense_row_control * ncols.isqrt().max(unsafe { 16.try_into().unwrap_unchecked() });
-        let dense_col_count = self.config.dense_col_control * nrows.min(ncols).isqrt().max(unsafe { 16.try_into().unwrap_unchecked() });
-
+        let dense_row_count = self.dense(self.config.dense_row_control, ncols);
+        let dense_col_count = self.dense(self.config.dense_col_control, nrows.min(ncols));
         // Number of columns alive.
         let mut cols = ncols;
 
@@ -1192,6 +1191,10 @@ impl<I: ColamdInt> Colamd<I> {
         }
 
         self.inds.truncate(dst.as_usize());
+    }
+
+    fn dense(&self, control: I, size: I) -> I {
+        I::from_f64((control.as_f64() * ((size.as_f64()).sqrt())).max(16.0))
     }
 
     fn clear(&mut self, mut tag: I, ncols: I) -> I {
