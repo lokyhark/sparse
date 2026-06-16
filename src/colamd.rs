@@ -780,7 +780,8 @@ impl<I: ColamdInt> Colamd<I> {
         let mut tag = I::ONE;
         let mut min_score = I::ZERO;
         let mut k = I::ZERO;
-        while k < ncols {
+
+        while k < cols {
             // Choose pivot column with minimum score.
             let pivot_col_j = loop {
                 let head = self.degree[min_score.as_usize()];
