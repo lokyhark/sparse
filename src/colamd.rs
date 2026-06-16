@@ -1102,14 +1102,16 @@ impl<I: ColamdInt> Colamd<I> {
                         next = self.cols[next.as_usize()].next;
                         continue;
                     }
-                    let p1 = self.cols[ptr.as_usize()].start;
-                    let p2 = self.cols[next.as_usize()].start;
+                    let mut p1 = self.cols[ptr.as_usize()].start;
+                    let mut p2 = self.cols[next.as_usize()].start;
                     let mut identical = true;
                     for _ in I::range(I::ZERO, length) {
                         if self.inds[p1.as_usize()] != self.inds[p2.as_usize()] {
                             identical = false;
                             break;
                         }
+                        p1 += I::ONE;
+                        p2 += I::ONE;
                     }
                     if !identical {
                         prev = next;
