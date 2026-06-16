@@ -131,7 +131,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 panic!("colamd error");
             }
 
-            // // Check
+            // Check
             let mut valid = true;
             for i in 0..ncols as usize {
                 if p[i] != order.order()[i] {

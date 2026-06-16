@@ -943,7 +943,7 @@ impl<I: ColamdInt> Colamd<I> {
                 let start = col.start;
                 let stop = start + col.length;
                 let mut pos = start;
-                let mut hash = I::ZERO;
+                let mut hash = 0usize;
                 let mut score = I::ZERO;
                 for ptr in I::range(start, stop) {
                     let i = self.inds[ptr.as_usize()];
@@ -955,7 +955,7 @@ impl<I: ColamdInt> Colamd<I> {
                     // Compact the column.
                     self.inds[pos.as_usize()] = i;
                     pos += I::ONE;
-                    hash += i;
+                    hash = hash.wrapping_add(i.as_usize());
                     // Increment score and prevent overflow.
                     if ncols - (row.mark - tag) < score {
                         score = ncols;
@@ -972,18 +972,18 @@ impl<I: ColamdInt> Colamd<I> {
                     k += col.weight;
                 } else {
                     col.rank = score;
-                    hash %= ncols + I::ONE;
-                    let head = self.degree[hash.as_usize()];
+                    hash %= ncols.as_usize() + 1;
+                    let head = self.degree[hash];
                     let first = if head > Self::EMPTY {
                         let first = self.cols[head.as_usize()].prev;
                         self.cols[head.as_usize()].prev = j;
                         first
                     } else {
-                        self.degree[hash.as_usize()] = -(j + I::TWO);
+                        self.degree[hash] = -(j + I::TWO);
                         -(head + I::TWO)
                     };
                     self.cols[j.as_usize()].next = first;
-                    self.cols[j.as_usize()].prev = hash;
+                    self.cols[j.as_usize()].prev = I::try_from(hash).unwrap();
                 }
             }
             // Detect super columns.
