@@ -1,4 +1,6 @@
-use crate::{Scalar, array::Array, int::Int};
+use sparse_array::Array;
+
+use crate::{Scalar, int::Int};
 
 /// Coordinate format (COO) sparse pattern.
 pub type CooPat<I> = CoordinatePattern<I>;

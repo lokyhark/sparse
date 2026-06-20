@@ -1,6 +1,4 @@
 //! Sparse library.
-
-mod array;
 mod coo;
 mod csc;
 mod int;

@@ -1,0 +1,18 @@
+[package]
+name = "sparse_colamd_valid"
+edition = "2024"
+version.workspace = true
+description.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme.workspace = true
+
+[dependencies]
+sparse = { path = "../../.." }
+flate2 = "1.1.9"
+tar = "0.4.46"
+
+[build-dependencies]
+cc = "1.0"

@@ -1,4 +1,6 @@
-use crate::{Scalar, array::Array, int::Int};
+use sparse_array::Array;
+
+use crate::{Scalar, int::Int};
 
 /// Compressed Sparse Column (CSC) format pattern.
 pub type CscPat<I> = CompressedSparseColumnPattern<I>;

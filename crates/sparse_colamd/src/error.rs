@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Display};
 
-use crate::array::ArrayError;
+use sparse_array::ArrayError;
 
 use super::int::ColamdInt;
 
@@ -8,7 +8,7 @@ use super::int::ColamdInt;
 ///
 /// # See Also
 ///
-/// [`colamd`](crate::colamd::colamd)
+/// [`colamd`](crate::colamd)
 #[derive(Debug)]
 pub struct ColamdError<I: ColamdInt> {
     /// Error kind.
