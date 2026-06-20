@@ -394,7 +394,7 @@ impl<I: ColamdInt> Colamd<I> {
         let score = self.score(nrows, ncols, nnz)?;
 
         // Find order.
-        self.find(nrows, ncols, nnz, score.cols, score.min_score, score.max_degree)?;
+        self.find(nrows, ncols, nnz, score.cols, score.max_degree)?;
 
         // Order.
         let order = self.order(ncols)?;
@@ -634,9 +634,8 @@ impl<I: ColamdInt> Colamd<I> {
         // - 16 is representable by all unsigned integer types (ColamdInt which is sealed).
         // - ncols and nrows are representable by I (checked previously).
         // - dense_row_control and dense_col_control are non negative and less than nrows and ncols which are representable by I.
-        let dense_row_count = self.config.dense_row_control * ncols.isqrt().max(unsafe { 16.try_into().unwrap_unchecked() });
-        let dense_col_count = self.config.dense_col_control * nrows.min(ncols).isqrt().max(unsafe { 16.try_into().unwrap_unchecked() });
-
+        let dense_row_count = Self::dense(self.config.dense_row_control, ncols);
+        let dense_col_count = Self::dense(self.config.dense_col_control, nrows.min(ncols));
         // Number of columns alive.
         let mut cols = ncols;
 
@@ -766,7 +765,7 @@ impl<I: ColamdInt> Colamd<I> {
         Ok(ColamdScore { cols, rows, max_degree, min_score })
     }
 
-    fn find(&mut self, nrows: I, ncols: I, nnz: I, cols: I, mut min_score: I, mut max_degree: I) -> Result<(), ColamdError<I>> {
+    fn find(&mut self, nrows: I, ncols: I, nnz: I, cols: I, mut max_degree: I) -> Result<(), ColamdError<I>> {
         // CHECKPOINT:
         // 0 <= nrows < isize::MAX + 1
         // 0 <= ncols < isize::MAX + 1
@@ -777,24 +776,24 @@ impl<I: ColamdInt> Colamd<I> {
         debug_assert!(ncols.as_usize() <= MAX, "invalid number of columns: ncols={ncols}, min={MIN}, max={MAX}");
         debug_assert!(MIN < nnz.as_usize() && nnz.as_usize() <= MAX, "invalid number of non zeros: nnz={nnz}, min={MIN}, max={MAX}");
         debug_assert!(I::ZERO < cols && cols <= ncols, "invalid number of alive columns: cols={}, min={}, max={}", cols, I::ZERO, ncols);
-        debug_assert!(min_score > I::ZERO && min_score <= ncols, "invalid minimum score");
 
         let mut tag = I::ONE;
-        let mut score = min_score;
+        let mut min_score = I::ZERO;
         let mut k = I::ZERO;
-        while k < ncols {
+
+        while k < cols {
             // Choose pivot column with minimum score.
             let pivot_col_j = loop {
-                let head = self.degree[score.as_usize()];
+                let head = self.degree[min_score.as_usize()];
                 if head != Self::EMPTY {
                     break head;
                 }
-                score += I::ONE;
+                min_score += I::ONE;
             };
             debug_assert!(pivot_col_j >= I::ZERO && pivot_col_j <= ncols);
             // Remove pivot column from degree list by placing next column as head.
             let next = self.cols[pivot_col_j.as_usize()].next;
-            self.degree[score.as_usize()] = next;
+            self.degree[min_score.as_usize()] = next;
             if next != Self::EMPTY {
                 self.cols[next.as_usize()].prev = Self::EMPTY;
             }
@@ -944,7 +943,7 @@ impl<I: ColamdInt> Colamd<I> {
                 let start = col.start;
                 let stop = start + col.length;
                 let mut pos = start;
-                let mut hash = I::ZERO;
+                let mut hash = 0usize;
                 let mut score = I::ZERO;
                 for ptr in I::range(start, stop) {
                     let i = self.inds[ptr.as_usize()];
@@ -956,7 +955,7 @@ impl<I: ColamdInt> Colamd<I> {
                     // Compact the column.
                     self.inds[pos.as_usize()] = i;
                     pos += I::ONE;
-                    hash += i;
+                    hash = hash.wrapping_add(i.as_usize());
                     // Increment score and prevent overflow.
                     if ncols - (row.mark - tag) < score {
                         score = ncols;
@@ -973,19 +972,20 @@ impl<I: ColamdInt> Colamd<I> {
                     k += col.weight;
                 } else {
                     col.rank = score;
-                    hash %= ncols + I::ONE;
-                    let head = self.degree[hash.as_usize()];
-                    let first = if head == Self::EMPTY {
-                        self.degree[hash.as_usize()] = -(j + I::TWO);
-                        -(head + I::TWO)
+                    hash %= ncols.as_usize() + 1;
+                    let head = self.degree[hash];
+                    let first = if head > Self::EMPTY {
+                        let first = self.cols[head.as_usize()].prev;
+                        self.cols[head.as_usize()].prev = j;
+                        first
                     } else {
-                        std::mem::replace(&mut col.prev, j)
+                        self.degree[hash] = -(j + I::TWO);
+                        -(head + I::TWO)
                     };
-                    col.next = first;
-                    col.prev = hash;
+                    self.cols[j.as_usize()].next = first;
+                    self.cols[j.as_usize()].prev = I::try_from(hash).unwrap();
                 }
             }
-
             // Detect super columns.
             self.detect(pivot_row_start, pivot_row_length);
 
@@ -1046,24 +1046,24 @@ impl<I: ColamdInt> Colamd<I> {
     }
 
     fn order(&mut self, ncols: I) -> Result<Array<I>, ColamdError<I>> {
-        for i in I::range(I::ZERO, ncols) {
-            let col = &self.cols[i.as_usize()];
-            if col.dead_principal() && col.rank == Self::EMPTY {
-                let mut parent = i;
+        for k in I::range(I::ZERO, ncols) {
+            let col = &self.cols[k.as_usize()];
+            if !col.dead_principal() && col.rank == Self::EMPTY {
+                let mut parent = k;
                 loop {
                     parent = self.cols[parent.as_usize()].weight;
-                    if !self.cols[parent.as_usize()].dead_principal() {
+                    if self.cols[parent.as_usize()].dead_principal() {
                         break;
                     }
                 }
+                let mut j = k;
                 let mut order = self.cols[parent.as_usize()].rank;
-                let mut col = i;
                 loop {
-                    self.cols[col.as_usize()].rank = order;
+                    self.cols[j.as_usize()].rank = order;
                     order += I::ONE;
-                    self.cols[col.as_usize()].weight = parent;
-                    col = self.cols[col.as_usize()].weight;
-                    if self.cols[col.as_usize()].rank == Self::EMPTY {
+                    self.cols[j.as_usize()].weight = parent;
+                    j = self.cols[j.as_usize()].weight;
+                    if self.cols[j.as_usize()].rank != Self::EMPTY {
                         break;
                     }
                 }
@@ -1089,29 +1089,33 @@ impl<I: ColamdInt> Colamd<I> {
             }
             let hash = self.cols[col.as_usize()].prev;
             let head = self.degree[hash.as_usize()];
-            let mut ptr = if head >= I::ZERO { self.cols[head.as_usize()].prev } else { -(head + I::TWO) };
+            let mut ptr = if head > Self::EMPTY { self.cols[head.as_usize()].prev } else { -(head + I::TWO) };
             let mut prev;
             while ptr != Self::EMPTY {
                 let length = self.cols[ptr.as_usize()].length;
                 let score = self.cols[ptr.as_usize()].rank;
                 prev = ptr;
-                let mut next = self.cols[col.as_usize()].next;
+                let mut next = self.cols[ptr.as_usize()].next;
                 while next != Self::EMPTY {
                     if self.cols[next.as_usize()].length != length || self.cols[next.as_usize()].rank != score {
                         prev = next;
+                        next = self.cols[next.as_usize()].next;
                         continue;
                     }
-                    let p1 = self.cols[ptr.as_usize()].start;
-                    let p2 = self.cols[next.as_usize()].start;
+                    let mut p1 = self.cols[ptr.as_usize()].start;
+                    let mut p2 = self.cols[next.as_usize()].start;
                     let mut identical = true;
                     for _ in I::range(I::ZERO, length) {
                         if self.inds[p1.as_usize()] != self.inds[p2.as_usize()] {
                             identical = false;
                             break;
                         }
+                        p1 += I::ONE;
+                        p2 += I::ONE;
                     }
                     if !identical {
                         prev = next;
+                        next = self.cols[next.as_usize()].next;
                         continue;
                     }
                     let weigth = self.cols[next.as_usize()].weight;
@@ -1134,22 +1138,23 @@ impl<I: ColamdInt> Colamd<I> {
 
     fn compact(&mut self, nrows: I, ncols: I) {
         // Defragment the columns.
-        let mut pos = I::ZERO;
+        let mut dst = I::ZERO;
         for j in I::range(I::ZERO, ncols) {
             let col = &mut self.cols[j.as_usize()];
             if col.alive() {
-                let mut ptr = col.start;
-                col.start = pos;
+                let mut src = col.start;
+                debug_assert!(dst <= src);
+                col.start = dst;
                 for _ in I::range(I::ZERO, col.length) {
-                    let i = self.inds[ptr.as_usize()];
-                    ptr += I::ONE;
+                    let i = self.inds[src.as_usize()];
+                    src += I::ONE;
                     let row = &mut self.rows[i.as_usize()];
                     if row.alive() {
-                        self.inds[pos.as_usize()] = i;
-                        pos += I::ONE;
+                        self.inds[dst.as_usize()] = i;
+                        dst += I::ONE;
                     }
                 }
-                col.length = pos - col.start;
+                col.length = dst - col.start;
             }
         }
 
@@ -1159,11 +1164,40 @@ impl<I: ColamdInt> Colamd<I> {
             if row.dead() || row.length == I::ZERO {
                 row.kill();
             } else {
-                let ptr = row.start;
-                row.mark = ptr;
-                self.inds[ptr.as_usize()] = -ptr - I::ONE;
+                let src = row.start;
+                row.mark = self.inds[src.as_usize()];
+                self.inds[src.as_usize()] = -i - I::ONE;
             }
         }
+
+        let mut src = dst;
+        while src.as_usize() < self.inds.length() {
+            if self.inds[src.as_usize()] < I::ZERO {
+                let i = -self.inds[src.as_usize()] - I::ONE;
+                debug_assert!(i >= I::ZERO && i <= nrows, "invalid row index `{i}`");
+                self.inds[src.as_usize()] = self.rows[i.as_usize()].mark;
+                self.rows[i.as_usize()].start = dst;
+                let length = self.rows[i.as_usize()].length;
+                for _ in I::range(I::ZERO, length) {
+                    let j = self.inds[src.as_usize()];
+                    src += I::ONE;
+                    let col = &self.cols[j.as_usize()];
+                    if col.alive() {
+                        self.inds[dst.as_usize()] = j;
+                        dst += I::ONE;
+                    }
+                }
+                self.rows[i.as_usize()].length = dst - self.rows[i.as_usize()].start;
+            } else {
+                src += I::ONE;
+            }
+        }
+
+        self.inds.truncate(dst.as_usize());
+    }
+
+    fn dense(control: I, size: I) -> I {
+        I::from_f64((control.as_f64() * ((size.as_f64()).sqrt())).max(16.0))
     }
 
     fn clear(&mut self, mut tag: I, ncols: I) -> I {
