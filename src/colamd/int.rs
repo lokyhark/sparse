@@ -96,9 +96,11 @@ impl ColamdInt for i16 {
     }
 
     fn as_f64(self) -> f64 {
-        self as f64
+        f64::from(self)
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     fn from_f64(value: f64) -> Self {
         value as Self
     }
@@ -132,9 +134,11 @@ impl ColamdInt for i32 {
     }
 
     fn as_f64(self) -> f64 {
-        self as f64
+        f64::from(self)
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     fn from_f64(value: f64) -> Self {
         value as Self
     }
@@ -168,10 +172,13 @@ impl ColamdInt for i64 {
         self as usize
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     fn as_f64(self) -> f64 {
         self as f64
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn from_f64(value: f64) -> Self {
         value as Self
     }
@@ -204,10 +211,13 @@ impl ColamdInt for isize {
         self as usize
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     fn as_f64(self) -> f64 {
         self as f64
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn from_f64(value: f64) -> Self {
         value as Self
     }

@@ -1,7 +1,13 @@
 [package]
 name = "colamd"
-version = "0.0.0"
 edition = "2024"
+version.workspace = true
+description.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme.workspace = true
 
 [dependencies]
 sparse = { path = "../.." }

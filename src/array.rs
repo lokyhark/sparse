@@ -188,3 +188,6 @@ impl<T> DerefMut for Array<T> {
         unsafe { std::slice::from_raw_parts_mut(self.ptr, self.len) }
     }
 }
+
+unsafe impl<T> Send for Array<T> where T: Send {}
+unsafe impl<T> Sync for Array<T> where T: Sync {}
