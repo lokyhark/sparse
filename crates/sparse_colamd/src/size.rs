@@ -1,5 +1,9 @@
 use super::int::ColamdInt;
 
+/// Validated dimensions of a sparse matrix for COLAMD algorithm.
+///
+/// Returned by [`Colamd::check`] after successfully validating the input arguments.
+/// Guarantees that `nrows`, `ncols`, and `nnz` are each in the range `(0, isize::MAX]`.
 #[derive(Debug)]
 pub struct ColamdSize<I: ColamdInt> {
     /// The number of rows in the matrix.
