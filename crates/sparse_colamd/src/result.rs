@@ -1,10 +1,12 @@
-use crate::{array::Array, colamd::int::ColamdInt};
+use sparse_array::Array;
+
+use crate::int::ColamdInt;
 
 /// COLAMD ordering result.
 ///
 /// # See Also
 ///
-/// [`colamd`](crate::colamd::colamd)
+/// [`colamd`](crate::colamd)
 #[derive(Clone, Debug)]
 pub struct ColamdResult<I: ColamdInt> {
     /// Number of columns alive.

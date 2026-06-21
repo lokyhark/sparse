@@ -3,7 +3,7 @@
 //! The main entry point of the COLAMD algorithm is the [`colamd`] function.
 //!
 //! ```
-//! use sparse::colamd::colamd;
+//! # use sparse_colamd::colamd;
 //!
 //! // Matrix  5-by-4
 //! // x 0 x 0
@@ -14,7 +14,7 @@
 //! let rowind = [0, 1, 4, 2, 4, 0, 1, 2, 3, 1, 3];
 //! let colptr = [0, 3, 5, 9, 11];
 //! // Execute COLAMD algorithm.
-//! let result = sparse::colamd::colamd(5, 4, &colptr, &rowind).unwrap();
+//! let result = colamd(5, 4, &colptr, &rowind).unwrap();
 //! // Retrieve ordering.
 //! let order = result.order();
 //! assert_eq!(order[0], 1);
@@ -27,8 +27,8 @@
 //! maximum performances can be reached with [`Colamd`] workspace:
 //!
 //! ```
-//! use sparse::colamd::Colamd;
-//! # use sparse::colamd::ColamdError;
+//! # use sparse_colamd::Colamd;
+//! # use sparse_colamd::ColamdError;
 //! # fn main() -> Result<(), ColamdError<i32>> {
 //! // Allocate workspace for 5 rows, 4 columns, 11 non zero entries and 10 elbow room capacity.
 //! let mut colamd = Colamd::alloc(5, 4, 11, 10)?;
@@ -50,7 +50,7 @@
 //!   *Algorithm 836: COLAMD, an approximate column minimum degree ordering algorithm*,<br />
 //!   ACM Transactions on Mathematical Software, vol. 30, no. 3., pp. 377-380, 2004.<br />
 //!   <https://doi.org/10.1145/1024074.1024080>
-use crate::array::Array;
+use sparse_array::Array;
 
 mod col;
 mod config;
@@ -107,8 +107,8 @@ pub fn colamd<I: ColamdInt>(nrows: I, ncols: I, colptr: &[I], rowind: &[I]) -> R
 /// # Examples
 ///
 /// ```
-/// use sparse::colamd::Colamd;
-/// # use sparse::colamd::ColamdError;
+/// # use sparse_colamd::Colamd;
+/// # use sparse_colamd::ColamdError;
 /// # fn main() -> Result<(), ColamdError<i32>> {
 /// let mut colamd = Colamd::alloc(5, 4, 11, 10)?;
 /// let order = colamd.run(5, 4, &[0, 3, 5, 9, 11], &[0, 1, 4, 2, 4, 0, 1, 2, 3, 1, 3])?;
